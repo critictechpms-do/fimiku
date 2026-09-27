@@ -50,6 +50,7 @@ function ShopContent() {
         if (sortBy) params.sort = sortBy;
 
         const res = await api.get('/products/', { params });
+        console.log("PRODUCT API RESPONSE:", res.data);
         const data = res.data.results || res.data || [];
         setProducts(data);
       } catch (err) {
