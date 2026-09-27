@@ -1,106 +1,184 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Category, Product, Cart, CartItem, Wishlist, Coupon, Order, OrderItem, Review
 
-from .mongo_client import sync_user_to_mongo
+from .models import (
+    Category,
+    Product,
+    Cart,
+    CartItem,
+    Wishlist,
+    Coupon,
+    Order,
+    OrderItem,
+    Review,
+)
 
-class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6)
-
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name')
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data.get('email', ''),
-            password=validated_data['password'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', '')
-        )
-        sync_user_to_mongo(user)
-        return user
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name')
 
 class CategorySerializer(serializers.ModelSerializer):
     products_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ('id', 'name', 'slug', 'description', 'image_url', 'products_count')
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "image_url",
+            "products_count",
+        )
 
     def get_products_count(self, obj):
         return obj.products.filter(is_active=True).count()
 
-class ReviewSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
 
+class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ('id', 'product', 'username', 'rating', 'comment', 'created_at')
-        read_only_fields = ('id', 'username', 'created_at')
+        fields = (
+            "id",
+            "product",
+            "rating",
+            "comment",
+            "created_at",
+        )
+        read_only_fields = (
+            "id",
+            "created_at",
+        )
+
 
 class ProductSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
-    category_slug = serializers.CharField(source='category.slug', read_only=True)
-    reviews = ReviewSerializer(many=True, read_only=True)
-    average_rating = serializers.FloatField(read_only=True)
-    final_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    is_in_stock = serializers.BooleanField(read_only=True)
+    category_name = serializers.CharField(
+        source="category.name",
+        read_only=True
+    )
+    category_slug = serializers.CharField(
+        source="category.slug",
+        read_only=True
+    )
+    reviews = ReviewSerializer(
+        many=True,
+        read_only=True
+    )
+    average_rating = serializers.FloatField(
+        read_only=True
+    )
+    final_price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        read_only=True
+    )
+    is_in_stock = serializers.BooleanField(
+        read_only=True
+    )
 
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'slug', 'category', 'category_name', 'category_slug',
-            'description', 'features', 'material', 'target_age', 'price',
-            'discount_price', 'final_price', 'stock', 'sku', 'image_url',
-            'additional_images', 'is_active', 'is_featured', 'is_in_stock',
-            'average_rating', 'reviews', 'created_at'
+            "id",
+            "name",
+            "slug",
+            "category",
+            "category_name",
+            "category_slug",
+            "description",
+            "features",
+            "material",
+            "target_age",
+            "price",
+            "discount_price",
+            "final_price",
+            "stock",
+            "sku",
+            "image_url",
+            "additional_images",
+            "is_active",
+            "is_featured",
+            "is_in_stock",
+            "average_rating",
+            "reviews",
+            "created_at",
         )
+
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
-    product_id = serializers.IntegerField(write_only=True)
+
+    # MongoDB ObjectId is not an integer.
+    product_id = serializers.CharField(write_only=True)
+
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'product_id', 'quantity', 'subtotal')
+        fields = (
+            "id",
+            "product",
+            "product_id",
+            "quantity",
+            "subtotal",
+        )
 
     def get_subtotal(self, obj):
         return obj.subtotal()
 
+
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)
+    items = CartItemSerializer(
+        many=True,
+        read_only=True
+    )
     total = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
-        fields = ('id', 'items', 'total', 'item_count')
+        fields = (
+            "id",
+            "items",
+            "total",
+            "item_count",
+        )
 
     def get_total(self, obj):
-        return sum(item.subtotal() for item in obj.items.all())
+        return sum(
+            item.subtotal()
+            for item in obj.items.all()
+        )
 
     def get_item_count(self, obj):
-        return sum(item.quantity for item in obj.items.all())
+        return sum(
+            item.quantity
+            for item in obj.items.all()
+        )
+
 
 class WishlistSerializer(serializers.ModelSerializer):
-    products = ProductSerializer(many=True, read_only=True)
+    products = ProductSerializer(
+        many=True,
+        read_only=True
+    )
 
     class Meta:
         model = Wishlist
-        fields = ('id', 'products')
+        fields = (
+            "id",
+            "products",
+        )
+
 
 class CouponSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon
-        fields = ('id', 'code', 'discount_type', 'value', 'min_order_amount', 'is_active')
+        fields = (
+            "id",
+            "code",
+            "discount_type",
+            "value",
+            "min_order_amount",
+            "is_active",
+        )
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
@@ -109,7 +187,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'product', 'product_name', 'price', 'quantity', 'subtotal', 'image_url', 'product_slug')
+        fields = (
+            "id",
+            "product",
+            "product_name",
+            "price",
+            "quantity",
+            "subtotal",
+            "image_url",
+            "product_slug",
+        )
 
     def get_subtotal(self, obj):
         return obj.subtotal()
@@ -124,14 +211,30 @@ class OrderItemSerializer(serializers.ModelSerializer):
             return obj.product.slug
         return ""
 
+
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
+    items = OrderItemSerializer(
+        many=True,
+        read_only=True
+    )
 
     class Meta:
         model = Order
         fields = (
-            'id', 'user', 'full_name', 'email', 'phone', 'shipping_address',
-            'city', 'postal_code', 'state', 'total_amount', 'discount_amount',
-            'razorpay_order_id', 'razorpay_payment_id', 'payment_status',
-            'order_status', 'items', 'created_at'
+            "id",
+            "full_name",
+            "email",
+            "phone",
+            "shipping_address",
+            "city",
+            "postal_code",
+            "state",
+            "total_amount",
+            "discount_amount",
+            "razorpay_order_id",
+            "razorpay_payment_id",
+            "payment_status",
+            "order_status",
+            "items",
+            "created_at",
         )
