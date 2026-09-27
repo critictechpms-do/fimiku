@@ -271,7 +271,7 @@ export default function HomePage() {
                 {/* Product Image */}
                 <div className="relative aspect-square rounded-2xl bg-fimiku-softLavender overflow-hidden flex items-center justify-center">
                   <img
-                    src={prod.image_url || "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"}
+                    src={getProductImage(prod)}
                     alt={prod.name}
                     className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
                   />

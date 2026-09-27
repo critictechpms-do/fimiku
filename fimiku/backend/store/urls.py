@@ -17,7 +17,7 @@ urlpatterns = [
     # Catalog endpoints
     path('categories/', CategoryListView.as_view(), name='categories'),
     path('products/', ProductListView.as_view(), name='products'),
-    path('products/<int:id>/', ProductDetailView.as_view(), name='product_detail'),
+    path('products/<str:id>/', ProductDetailView.as_view(), name='product_detail'),
 
     # Cart & Wishlist
     path('cart/', CartView.as_view(), name='cart'),
@@ -28,7 +28,7 @@ urlpatterns = [
     path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_order'),
     path('payment/verify/', VerifyPaymentView.as_view(), name='verify_payment'),
     path('orders/', OrderListView.as_view(), name='orders_list'),
-    path('orders/<int:id>/', OrderDetailView.as_view(), name='order_detail'),
+    path('orders/<str:id>/', OrderDetailView.as_view(), name='order_detail'),
 
     # Reviews & AI
     path('reviews/', ReviewCreateView.as_view(), name='create_review'),

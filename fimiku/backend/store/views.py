@@ -308,7 +308,6 @@ class CreateRazorpayOrderView(views.APIView):
                 razorpay_order_id = f"order_dev_{uuid.uuid4().hex[:12]}"
 
         order = Order.objects.create(
-            user=request.user if request.user.is_authenticated else None,
             full_name=data.get('full_name', 'Guest Parent'),
             email=data.get('email', 'guest@fimiku.com'),
             phone=data.get('phone', '9876543210'),
