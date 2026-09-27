@@ -16,6 +16,14 @@ from .models import (
 )
 
 
+class ObjectIdField(serializers.CharField):
+    def to_representation(self, value):
+        return str(value)
+
+    def to_internal_value(self, data):
+        return str(data)
+
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
@@ -60,6 +68,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
     products_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -78,6 +87,12 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        pk_field=ObjectIdField()
+    )
+
     class Meta:
         model = Review
         fields = (
@@ -94,6 +109,13 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        pk_field=ObjectIdField()
+    )
+
     category_name = serializers.CharField(
         source="category.name",
         read_only=True
@@ -153,6 +175,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     product = ProductSerializer(
         read_only=True
     )
@@ -178,6 +202,8 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 
 class CartSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     items = CartItemSerializer(
         many=True,
         read_only=True
@@ -209,6 +235,8 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class WishlistSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     products = ProductSerializer(
         many=True,
         read_only=True
@@ -223,6 +251,8 @@ class WishlistSerializer(serializers.ModelSerializer):
 
 
 class CouponSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     class Meta:
         model = Coupon
         fields = (
@@ -236,9 +266,16 @@ class CouponSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     subtotal = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     product_slug = serializers.SerializerMethodField()
+
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        pk_field=ObjectIdField()
+    )
 
     class Meta:
         model = OrderItem
@@ -268,6 +305,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    id = ObjectIdField(read_only=True)
+
     items = OrderItemSerializer(
         many=True,
         read_only=True
