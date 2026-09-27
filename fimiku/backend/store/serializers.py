@@ -1,4 +1,7 @@
+from django.contrib.auth.models import User
 from rest_framework import serializers
+
+from .mongo_client import sync_user_to_mongo
 
 from .models import (
     Category,
@@ -11,6 +14,49 @@ from .models import (
     OrderItem,
     Review,
 )
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+        )
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data.get("email", ""),
+            password=validated_data["password"],
+            first_name=validated_data.get("first_name", ""),
+            last_name=validated_data.get("last_name", ""),
+        )
+
+        sync_user_to_mongo(user)
+
+        return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+        )
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -52,22 +98,27 @@ class ProductSerializer(serializers.ModelSerializer):
         source="category.name",
         read_only=True
     )
+
     category_slug = serializers.CharField(
         source="category.slug",
         read_only=True
     )
+
     reviews = ReviewSerializer(
         many=True,
         read_only=True
     )
+
     average_rating = serializers.FloatField(
         read_only=True
     )
+
     final_price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         read_only=True
     )
+
     is_in_stock = serializers.BooleanField(
         read_only=True
     )
@@ -102,10 +153,13 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    product = ProductSerializer(
+        read_only=True
+    )
 
-    # MongoDB ObjectId is not an integer.
-    product_id = serializers.CharField(write_only=True)
+    product_id = serializers.CharField(
+        write_only=True
+    )
 
     subtotal = serializers.SerializerMethodField()
 
@@ -128,6 +182,7 @@ class CartSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True
     )
+
     total = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
 
