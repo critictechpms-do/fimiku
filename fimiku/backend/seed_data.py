@@ -10,11 +10,6 @@ from store.models import Category, Product, Coupon
 def seed_database():
     print("[Seeding] Seeding Fimiku baby catalog...")
 
-    # Clear existing categories, products & coupons for fresh seed
-    Category.objects.all().delete()
-    Product.objects.all().delete()
-    Coupon.objects.all().delete()
-
     # Categories
     cat_teethers = Category.objects.create(
         name="Teething Toys",
@@ -208,7 +203,7 @@ def seed_database():
         is_active=True
     )
 
-    print("[Success] Fimiku database seeded successfully with PDF catalog items!")
+    print("[Success] Fimiku database seeded successfully!")
 
 
 if __name__ == '__main__':
