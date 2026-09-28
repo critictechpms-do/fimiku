@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 
 export interface ProductType {
@@ -33,9 +34,16 @@ export interface CartItemType {
 }
 
 interface CartContextType {
-  cart: { items: CartItemType[]; total: number; item_count: number };
+  cart: {
+    items: CartItemType[];
+    total: number;
+    item_count: number;
+  };
   wishlist: number[];
-  addToCart: (productOrId: number | ProductType, quantity?: number) => Promise<boolean>;
+  addToCart: (
+    productOrId: number | ProductType,
+    quantity?: number
+  ) => Promise<boolean>;
   updateQuantity: (itemId: number, quantity: number) => Promise<void>;
   removeFromCart: (itemId: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -50,26 +58,37 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null);
 
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [cart, setCart] = useState<{ items: CartItemType[]; total: number; item_count: number }>({
+export const CartProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [cart, setCart] = useState<{
+    items: CartItemType[];
+    total: number;
+    item_count: number;
+  }>({
     items: [],
     total: 0,
     item_count: 0,
   });
+
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
+
     setTimeout(() => {
       setToast(null);
-    }, 3000);
+    }, 4000);
   };
 
   const fetchCart = async () => {
     try {
       const res = await api.get('/cart/');
+
       setCart({
         items: res.data.items || [],
         total: res.data.total || 0,
@@ -85,54 +104,94 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchWishlist = async () => {
     try {
       const res = await api.get('/wishlist/');
+
       if (res.data?.products) {
-        setWishlist(res.data.products.map((p: any) => p.id));
+        setWishlist(
+          res.data.products.map((p: any) => p.id)
+        );
       }
     } catch (err) {
       console.error('Error fetching wishlist:', err);
     }
   };
 
-  const addToCart = async (productOrId: number | ProductType, quantity: number = 1): Promise<boolean> => {
-    const productId = typeof productOrId === 'number' ? productOrId : productOrId.id;
+  const addToCart = async (
+    productOrId: number | ProductType,
+    quantity: number = 1
+  ): Promise<boolean> => {
+    const productId =
+      typeof productOrId === 'number'
+        ? productOrId
+        : productOrId.id;
+
     try {
-      const res = await api.post('/cart/', { product_id: productId, quantity });
-      setCart({
+      const res = await api.post('/cart/', {
+        product_id: productId,
+        quantity,
+      });
+
+      const updatedCart = {
         items: res.data.items || [],
         total: res.data.total || 0,
         item_count: res.data.item_count || 0,
-      });
-      showToast('✨ Added to your shopping bag!');
+      };
+
+      setCart(updatedCart);
+
+      showToast(
+        `✅ Added to cart • 🛍️ ${updatedCart.item_count} ${
+          updatedCart.item_count === 1 ? 'item' : 'items'
+        } in cart`
+      );
+
       return true;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Could not add item to cart';
+      const errorMsg =
+        err.response?.data?.error ||
+        'Could not add item to cart';
+
       showToast(`⚠️ ${errorMsg}`);
+
       return false;
     }
   };
 
-  const updateQuantity = async (itemId: number, quantity: number) => {
+  const updateQuantity = async (
+    itemId: number,
+    quantity: number
+  ) => {
     try {
-      const res = await api.put('/cart/', { item_id: itemId, quantity });
+      const res = await api.put('/cart/', {
+        item_id: itemId,
+        quantity,
+      });
+
       setCart({
         items: res.data.items || [],
         total: res.data.total || 0,
         item_count: res.data.item_count || 0,
       });
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to update quantity';
+      const errorMsg =
+        err.response?.data?.error ||
+        'Failed to update quantity';
+
       showToast(`⚠️ ${errorMsg}`);
     }
   };
 
   const removeFromCart = async (itemId: number) => {
     try {
-      const res = await api.delete('/cart/', { data: { item_id: itemId } });
+      const res = await api.delete('/cart/', {
+        data: { item_id: itemId },
+      });
+
       setCart({
         items: res.data.items || [],
         total: res.data.total || 0,
         item_count: res.data.item_count || 0,
       });
+
       showToast('Item removed from bag');
     } catch (err) {
       console.error('Failed to remove item:', err);
@@ -142,21 +201,39 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const clearCart = async () => {
     try {
       await api.delete('/cart/');
-      setCart({ items: [], total: 0, item_count: 0 });
+
+      setCart({
+        items: [],
+        total: 0,
+        item_count: 0,
+      });
     } catch (err) {
       console.error('Failed to clear cart:', err);
     }
   };
 
-  const toggleWishlist = async (productOrId: number | ProductType) => {
-    const productId = typeof productOrId === 'number' ? productOrId : productOrId.id;
+  const toggleWishlist = async (
+    productOrId: number | ProductType
+  ) => {
+    const productId =
+      typeof productOrId === 'number'
+        ? productOrId
+        : productOrId.id;
+
     try {
-      const res = await api.post('/wishlist/', { product_id: productId });
+      const res = await api.post('/wishlist/', {
+        product_id: productId,
+      });
+
       if (res.data?.in_wishlist) {
         setWishlist((prev) => [...prev, productId]);
+
         showToast('❤️ Saved to your wishlist');
       } else {
-        setWishlist((prev) => prev.filter((id) => id !== productId));
+        setWishlist((prev) =>
+          prev.filter((id) => id !== productId)
+        );
+
         showToast('Removed from wishlist');
       }
     } catch (err) {
@@ -164,8 +241,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const isInWishlist = (productOrId: number | ProductType) => {
-    const productId = typeof productOrId === 'number' ? productOrId : productOrId.id;
+  const isInWishlist = (
+    productOrId: number | ProductType
+  ) => {
+    const productId =
+      typeof productOrId === 'number'
+        ? productOrId
+        : productOrId.id;
+
     return wishlist.includes(productId);
   };
 
@@ -193,9 +276,35 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }}
     >
       {children}
+
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-fimiku-charcoal text-white text-xs px-5 py-3 rounded-full shadow-2xl border border-fimiku-peach/40 animate-fade-in flex items-center gap-2">
-          <span>{toast}</span>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-xl">
+          <div className="bg-fimiku-charcoal text-white px-5 py-4 rounded-2xl shadow-2xl border border-fimiku-peach/40 flex items-center justify-between gap-4">
+            
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+                ✓
+              </div>
+
+              <div>
+                <p className="text-sm font-bold">
+                  Added to Cart
+                </p>
+
+                <p className="text-xs text-gray-300">
+                  🛍️ {cart.item_count}{' '}
+                  {cart.item_count === 1 ? 'item' : 'items'} in your cart
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/cart"
+              className="shrink-0 bg-white text-fimiku-charcoal px-4 py-2.5 rounded-full text-xs font-bold hover:bg-fimiku-softLavender transition"
+            >
+              View Cart →
+            </Link>
+          </div>
         </div>
       )}
     </CartContext.Provider>
@@ -204,6 +313,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) throw new Error('useCart must be used within a CartProvider');
+
+  if (!context) {
+    throw new Error(
+      'useCart must be used within a CartProvider'
+    );
+  }
+
   return context;
 };
