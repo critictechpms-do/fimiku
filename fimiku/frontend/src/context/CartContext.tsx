@@ -16,6 +16,7 @@ export interface ProductType {
   target_age?: string;
   material?: string;
   description?: string;
+  features?: string[];
   stock?: number;
   is_in_stock?: boolean;
   is_active?: boolean;
