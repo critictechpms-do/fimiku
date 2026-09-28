@@ -28,8 +28,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         self.user.last_login = timezone.now()
         self.user.save(update_fields=['last_login'])
+
         # Sync user state and encrypted password hash to MongoDB Atlas
         sync_user_to_mongo(self.user)
+
         data['user'] = {
             'id': self.user.id,
             'username': self.user.username,
@@ -37,14 +39,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
         }
+
         return data
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserRegisterSerializer
     permission_classes = [permissions.AllowAny]
+
 
 class MeView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -52,6 +58,7 @@ class MeView(views.APIView):
     def get(self, request):
         sync_user_to_mongo(request.user)
         return Response(UserSerializer(request.user).data)
+
 
 # --- Catalog Views ---
 
@@ -61,25 +68,37 @@ class CategoryListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     pagination_class = None
 
+
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('reviews')
+        queryset = (
+            Product.objects
+            .filter(is_active=True)
+            .select_related('category')
+            .prefetch_related('reviews')
+        )
+
         category = self.request.query_params.get('category')
         search = self.request.query_params.get('search')
         featured = self.request.query_params.get('featured')
         sort = self.request.query_params.get('sort')
 
         if category:
-            queryset = queryset.filter(Q(category__slug=category) | Q(category__name__iexact=category))
+            queryset = queryset.filter(
+                Q(category__slug=category) |
+                Q(category__name__iexact=category)
+            )
+
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(description__icontains=search) |
                 Q(material__icontains=search)
             )
+
         if featured and featured.lower() == 'true':
             queryset = queryset.filter(is_featured=True)
 
@@ -92,11 +111,13 @@ class ProductListView(generics.ListAPIView):
 
         return queryset
 
+
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     lookup_field = 'id'
     permission_classes = [permissions.AllowAny]
+
 
 # --- Cart Views ---
 
@@ -109,10 +130,14 @@ class CartView(views.APIView):
             request.headers.get('X-Session-Key')
             or request.data.get('session_key')
         )
+
         if not session_key:
             session_key = 'guest-' + str(uuid.uuid4())[:8]
 
-        cart, _ = Cart.objects.get_or_create(session_key=session_key)
+        cart, _ = Cart.objects.get_or_create(
+            session_key=session_key
+        )
+
         return cart
 
     def get(self, request):
@@ -121,58 +146,116 @@ class CartView(views.APIView):
 
     def post(self, request):
         cart = self._get_cart(request)
+
         product_id = request.data.get('product_id')
         quantity = int(request.data.get('quantity', 1))
 
-        product = get_object_or_404(Product, id=product_id)
+        product = get_object_or_404(
+            Product,
+            id=product_id
+        )
+
         if product.stock < quantity:
             return Response(
-                {'error': f"Only {product.stock} items available in stock."},
+                {
+                    'error': (
+                        f"Only {product.stock} items "
+                        f"available in stock."
+                    )
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product=product
+        )
+
         if not created:
             new_qty = item.quantity + quantity
+
             if product.stock < new_qty:
                 return Response(
-                    {'error': f"Cannot add more. Total in cart ({new_qty}) exceeds stock ({product.stock})."},
+                    {
+                        'error': (
+                            f"Cannot add more. Total in cart "
+                            f"({new_qty}) exceeds stock "
+                            f"({product.stock})."
+                        )
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
             item.quantity = new_qty
         else:
             item.quantity = quantity
+
         item.save()
-        return Response(CartSerializer(cart).data)
+
+        return Response(
+            CartSerializer(cart).data
+        )
 
     def put(self, request):
         """Update item quantity directly"""
-        cart = self._get_cart(request)
-        item_id = request.data.get('item_id')
-        quantity = int(request.data.get('quantity', 1))
 
-        item = get_object_or_404(CartItem, id=item_id, cart=cart)
+        cart = self._get_cart(request)
+
+        item_id = request.data.get('item_id')
+        quantity = int(
+            request.data.get(
+                'quantity',
+                1
+            )
+        )
+
+        item = get_object_or_404(
+            CartItem,
+            id=item_id,
+            cart=cart
+        )
+
         if quantity <= 0:
             item.delete()
         else:
             if item.product.stock < quantity:
                 return Response(
-                    {'error': f"Only {item.product.stock} units available in stock."},
+                    {
+                        'error': (
+                            f"Only {item.product.stock} "
+                            f"units available in stock."
+                        )
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
             item.quantity = quantity
             item.save()
-        return Response(CartSerializer(cart).data)
+
+        return Response(
+            CartSerializer(cart).data
+        )
 
     def delete(self, request):
         cart = self._get_cart(request)
+
         item_id = request.data.get('item_id')
+
         if item_id:
-            CartItem.objects.filter(cart=cart, id=item_id).delete()
+            CartItem.objects.filter(
+                cart=cart,
+                id=item_id
+            ).delete()
         else:
             # Clear entire cart
-            CartItem.objects.filter(cart=cart).delete()
-        return Response(CartSerializer(cart).data)
+            CartItem.objects.filter(
+                cart=cart
+            ).delete()
+
+        return Response(
+            CartSerializer(cart).data
+        )
+
 
 # --- Wishlist Views ---
 
@@ -186,21 +269,37 @@ class WishlistView(views.APIView):
             or request.data.get('session_key')
             or 'guest-wishlist'
         )
-        wishlist, _ = Wishlist.objects.get_or_create(session_key=session_key)
+
+        wishlist, _ = Wishlist.objects.get_or_create(
+            session_key=session_key
+        )
+
         return wishlist
 
     def get(self, request):
         wishlist = self._get_wishlist(request)
-        return Response(WishlistSerializer(wishlist).data)
+
+        return Response(
+            WishlistSerializer(wishlist).data
+        )
 
     def post(self, request):
         wishlist = self._get_wishlist(request)
-        product_id = request.data.get('product_id')
-        product = get_object_or_404(Product, id=product_id)
 
-        if wishlist.products.filter(id=product.id).exists():
+        product_id = request.data.get('product_id')
+
+        product = get_object_or_404(
+            Product,
+            id=product_id
+        )
+
+        if wishlist.products.filter(
+            id=product.id
+        ).exists():
+
             wishlist.products.remove(product)
             in_wishlist = False
+
         else:
             wishlist.products.add(product)
             in_wishlist = True
@@ -209,8 +308,11 @@ class WishlistView(views.APIView):
 
         return Response({
             'in_wishlist': in_wishlist,
-            'wishlist': WishlistSerializer(wishlist).data
+            'wishlist': WishlistSerializer(
+                wishlist
+            ).data
         })
+
 
 # --- Coupon Validation ---
 
@@ -218,18 +320,42 @@ class CouponValidateView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        code = request.data.get('code', '').strip().upper()
-        order_total = Decimal(str(request.data.get('total', 0)))
+        code = request.data.get(
+            'code',
+            ''
+        ).strip().upper()
+
+        order_total = Decimal(
+            str(
+                request.data.get(
+                    'total',
+                    0
+                )
+            )
+        )
 
         try:
-            coupon = Coupon.objects.get(code=code, is_active=True)
+            coupon = Coupon.objects.get(
+                code=code,
+                is_active=True
+            )
+
             if order_total < coupon.min_order_amount:
-                return Response({
-                    'error': f"Minimum order amount for coupon '{code}' is ₹{coupon.min_order_amount}"
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {
+                        'error': (
+                            f"Minimum order amount for coupon "
+                            f"'{code}' is ₹"
+                            f"{coupon.min_order_amount}"
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             if coupon.discount_type == 'PERCENTAGE':
-                discount = (order_total * coupon.value) / Decimal(100)
+                discount = (
+                    order_total * coupon.value
+                ) / Decimal(100)
             else:
                 discount = coupon.value
 
@@ -240,8 +366,17 @@ class CouponValidateView(views.APIView):
                 'discount_type': coupon.discount_type,
                 'value': float(coupon.value)
             })
+
         except Coupon.DoesNotExist:
-            return Response({'error': 'Invalid or expired coupon code.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    'error': (
+                        'Invalid or expired coupon code.'
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 # --- Payment & Orders ---
 
@@ -249,189 +384,450 @@ class CreateRazorpayOrderView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        data = request.data
-        items_data = data.get('items', [])
-        if not items_data:
-            return Response({'error': 'No items selected for order.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Calculate the subtotal from the database prices, not client-supplied prices.
-        subtotal = Decimal('0')
-        for item in items_data:
-            prod = Product.objects.filter(id=item.get('product_id')).first()
-            unit_price = Decimal(str(
-                prod.discount_price if prod.discount_price is not None else prod.price
-            ))
-            subtotal += unit_price * int(item.get('quantity', 1))
-
-        discount = Decimal(str(data.get('discount_amount', 0)))
-        discount = max(Decimal('0'), min(discount, subtotal))
-        total = max(Decimal('0'), subtotal - discount)
-        amount_paise = int(total * 100)
-
-        # Validate every product and its stock before creating anything.
-        for item in items_data:
-            product_id = item.get('product_id')
-            quantity = int(item.get('quantity', 1))
-
-            if not product_id:
-                return Response(
-                    {'error': 'A product_id is missing from the order.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            prod = Product.objects.filter(id=product_id).first()
-            if not prod:
-                return Response(
-                    {'error': f"Product '{product_id}' was not found."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if quantity < 1:
-                return Response(
-                    {'error': 'Quantity must be at least 1.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if prod.stock < quantity:
-                return Response(
-                    {'error': f"Product '{prod.name}' only has {prod.stock} left in stock."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        # Create Razorpay order (or sandbox simulation if test keys)
-        key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-        key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
-        
-        is_sandbox_mock = not key_id or 'placeholder' in key_id.lower() or not key_secret or 'placeholder' in key_secret.lower()
-        
-        if is_sandbox_mock:
-            razorpay_order_id = f"order_mock_{uuid.uuid4().hex[:12]}"
-        else:
-            try:
-                client = razorpay.Client(auth=(key_id, key_secret))
-                rzp_order = client.order.create({
-                    "amount": amount_paise if amount_paise > 0 else 100,
-                    "currency": "INR",
-                    "payment_capture": "1"
-                })
-                razorpay_order_id = rzp_order['id']
-            except Exception as e:
-                # Fallback to simulation mode for smooth local testing
-                razorpay_order_id = f"order_dev_{uuid.uuid4().hex[:12]}"
-
-        order = Order.objects.create(
-            full_name=data.get('full_name', 'Guest Parent'),
-            email=data.get('email', 'guest@fimiku.com'),
-            phone=data.get('phone', '9876543210'),
-            shipping_address=data.get('shipping_address', 'Address'),
-            city=data.get('city', 'City'),
-            postal_code=data.get('postal_code', '000000'),
-            state=data.get('state', 'State'),
-            total_amount=total,
-            discount_amount=discount,
-            razorpay_order_id=razorpay_order_id,
-            payment_status='INITIATED'
-        )
-
-        for item in items_data:
-            prod = Product.objects.filter(id=item.get('product_id')).first()
-            if not prod:
-                return Response(
-                    {'error': f"Product '{item.get('product_id')}' was not found while saving the order."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            unit_price = Decimal(str(
-                prod.discount_price if prod.discount_price is not None else prod.price
-            ))
-
-            OrderItem.objects.create(
-                order=order,
-                product=prod,
-                product_name=prod.name,
-                price=unit_price,
-                quantity=int(item.get('quantity', 1))
+        try:
+            data = request.data
+            items_data = data.get(
+                'items',
+                []
             )
 
-        return Response({
-            'order_id': order.id,
-            'razorpay_order_id': razorpay_order_id,
-            'amount': amount_paise,
-            'currency': 'INR',
-            'key_id': key_id if key_id else 'rzp_test_placeholder',
-            'is_mock': is_sandbox_mock
-        })
+            if not items_data:
+                return Response(
+                    {
+                        'error': (
+                            'No items selected for order.'
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            validated_items = []
+            subtotal = Decimal('0')
+
+            # -----------------------------------------
+            # VALIDATE PRODUCTS + STOCK + PRICE
+            # -----------------------------------------
+            for item in items_data:
+
+                product_id = item.get(
+                    'product_id'
+                )
+
+                quantity = int(
+                    item.get(
+                        'quantity',
+                        1
+                    )
+                )
+
+                if not product_id:
+                    return Response(
+                        {
+                            'error': (
+                                'Product ID is missing.'
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                if quantity < 1:
+                    return Response(
+                        {
+                            'error': (
+                                'Quantity must be at least 1.'
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # IMPORTANT:
+                # Check that the product exists BEFORE
+                # reading product fields.
+                product = Product.objects.filter(
+                    id=product_id
+                ).first()
+
+                if not product:
+                    return Response(
+                        {
+                            'error': (
+                                f"Product '{product_id}' "
+                                f"was not found."
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                if product.stock < quantity:
+                    return Response(
+                        {
+                            'error': (
+                                f"Only {product.stock} units "
+                                f"of '{product.name}' are "
+                                f"available."
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                discount_price = getattr(
+                    product,
+                    'discount_price',
+                    None
+                )
+
+                normal_price = getattr(
+                    product,
+                    'price',
+                    0
+                )
+
+                if discount_price is not None:
+                    unit_price = Decimal(
+                        str(discount_price)
+                    )
+                else:
+                    unit_price = Decimal(
+                        str(normal_price)
+                    )
+
+                subtotal += (
+                    unit_price * quantity
+                )
+
+                validated_items.append({
+                    'product': product,
+                    'quantity': quantity,
+                    'price': unit_price
+                })
+
+            # -----------------------------------------
+            # APPLY DISCOUNT
+            # -----------------------------------------
+            discount = Decimal(
+                str(
+                    data.get(
+                        'discount_amount',
+                        0
+                    )
+                )
+            )
+
+            if discount < 0:
+                discount = Decimal('0')
+
+            if discount > subtotal:
+                discount = subtotal
+
+            total = (
+                subtotal - discount
+            )
+
+            amount_paise = int(
+                total * 100
+            )
+
+            # -----------------------------------------
+            # RAZORPAY CONFIGURATION
+            # -----------------------------------------
+            key_id = getattr(
+                settings,
+                'RAZORPAY_KEY_ID',
+                ''
+            )
+
+            key_secret = getattr(
+                settings,
+                'RAZORPAY_KEY_SECRET',
+                ''
+            )
+
+            is_mock = (
+                not key_id
+                or 'placeholder' in key_id.lower()
+                or not key_secret
+                or 'placeholder' in key_secret.lower()
+            )
+
+            # -----------------------------------------
+            # CREATE RAZORPAY ORDER
+            # -----------------------------------------
+            if is_mock:
+
+                razorpay_order_id = (
+                    f"order_mock_"
+                    f"{uuid.uuid4().hex[:12]}"
+                )
+
+            else:
+
+                try:
+
+                    client = razorpay.Client(
+                        auth=(
+                            key_id,
+                            key_secret
+                        )
+                    )
+
+                    razorpay_order = client.order.create({
+                        'amount': (
+                            amount_paise
+                            if amount_paise > 0
+                            else 100
+                        ),
+                        'currency': 'INR',
+                        'payment_capture': '1'
+                    })
+
+                    razorpay_order_id = (
+                        razorpay_order['id']
+                    )
+
+                except Exception:
+                    # Development fallback
+                    razorpay_order_id = (
+                        f"order_dev_"
+                        f"{uuid.uuid4().hex[:12]}"
+                    )
+
+            # -----------------------------------------
+            # CREATE DATABASE ORDER
+            # -----------------------------------------
+            order = Order.objects.create(
+                full_name=data.get(
+                    'full_name',
+                    'Guest Parent'
+                ),
+                email=data.get(
+                    'email',
+                    'guest@fimiku.com'
+                ),
+                phone=data.get(
+                    'phone',
+                    '9876543210'
+                ),
+                shipping_address=data.get(
+                    'shipping_address',
+                    'Address'
+                ),
+                city=data.get(
+                    'city',
+                    'City'
+                ),
+                postal_code=data.get(
+                    'postal_code',
+                    '000000'
+                ),
+                state=data.get(
+                    'state',
+                    'State'
+                ),
+                total_amount=total,
+                discount_amount=discount,
+                razorpay_order_id=razorpay_order_id,
+                payment_status='INITIATED'
+            )
+
+            # -----------------------------------------
+            # CREATE ORDER ITEMS
+            # -----------------------------------------
+            for item in validated_items:
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=item['product'],
+                    product_name=item['product'].name,
+                    price=item['price'],
+                    quantity=item['quantity']
+                )
+
+            # -----------------------------------------
+            # SUCCESS RESPONSE
+            # -----------------------------------------
+            return Response({
+                'order_id': str(order.id),
+                'razorpay_order_id': razorpay_order_id,
+                'amount': amount_paise,
+                'currency': 'INR',
+                'key_id': (
+                    key_id
+                    if key_id
+                    else 'rzp_test_placeholder'
+                ),
+                'is_mock': is_mock
+            })
+
+        except Exception as e:
+
+            return Response(
+                {
+                    'error': (
+                        f'Order creation failed: '
+                        f'{str(e)}'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class VerifyPaymentView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        razorpay_order_id = request.data.get('razorpay_order_id')
-        razorpay_payment_id = request.data.get('razorpay_payment_id', f"pay_mock_{uuid.uuid4().hex[:8]}")
-        razorpay_signature = request.data.get('razorpay_signature')
+
+        razorpay_order_id = request.data.get(
+            'razorpay_order_id'
+        )
+
+        razorpay_payment_id = request.data.get(
+            'razorpay_payment_id',
+            f"pay_mock_{uuid.uuid4().hex[:8]}"
+        )
+
+        razorpay_signature = request.data.get(
+            'razorpay_signature'
+        )
 
         try:
-            order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+            order = Order.objects.get(
+                razorpay_order_id=razorpay_order_id
+            )
+
         except Order.DoesNotExist:
-            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    'error': (
+                        'Order not found.'
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
-        key_secret = getattr(settings, 'RAZORPAY_KEY_SECRET', '')
-        is_sandbox_mock = not key_id or 'placeholder' in key_id.lower() or not key_secret or 'placeholder' in key_secret.lower()
+        key_id = getattr(
+            settings,
+            'RAZORPAY_KEY_ID',
+            ''
+        )
 
-        if not is_sandbox_mock and razorpay_signature:
+        key_secret = getattr(
+            settings,
+            'RAZORPAY_KEY_SECRET',
+            ''
+        )
+
+        is_sandbox_mock = (
+            not key_id
+            or 'placeholder' in key_id.lower()
+            or not key_secret
+            or 'placeholder' in key_secret.lower()
+        )
+
+        if (
+            not is_sandbox_mock
+            and razorpay_signature
+        ):
+
             try:
-                client = razorpay.Client(auth=(key_id, key_secret))
+                client = razorpay.Client(
+                    auth=(
+                        key_id,
+                        key_secret
+                    )
+                )
+
                 client.utility.verify_payment_signature({
                     'razorpay_order_id': razorpay_order_id,
                     'razorpay_payment_id': razorpay_payment_id,
                     'razorpay_signature': razorpay_signature
                 })
-            except Exception as e:
-                return Response({'error': f'Payment signature verification failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Mark order as PAID & Processing
+            except Exception as e:
+                return Response(
+                    {
+                        'error': (
+                            'Payment signature '
+                            f'verification failed: {str(e)}'
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Mark order as PAID
         order.payment_status = 'PAID'
         order.order_status = 'PROCESSING'
-        order.razorpay_payment_id = razorpay_payment_id
+        order.razorpay_payment_id = (
+            razorpay_payment_id
+        )
         order.save()
 
-        # Safely deduct inventory stock
+        # Deduct inventory
         for item in order.items.all():
+
             if item.product:
-                item.product.stock = max(0, item.product.stock - item.quantity)
+
+                item.product.stock = max(
+                    0,
+                    item.product.stock -
+                    item.quantity
+                )
+
                 item.product.save()
 
-        # Clear the guest cart using the same session key used by the frontend.
-        session_key = request.headers.get('X-Session-Key')
-        if session_key:
-            Cart.objects.filter(session_key=session_key).delete()
+        # Clear guest cart
+        session_key = request.headers.get(
+            'X-Session-Key'
+        )
 
-        # Sync completed order to MongoDB Atlas
+        if session_key:
+            Cart.objects.filter(
+                session_key=session_key
+            ).delete()
+
+        # Sync order to MongoDB
         sync_order_to_mongo(order)
 
         return Response({
-            'status': 'Payment Verified Successfully',
+            'status': (
+                'Payment Verified Successfully'
+            ),
             'order_id': order.id,
-            'order': OrderSerializer(order).data
+            'order': OrderSerializer(
+                order
+            ).data
         })
+
 
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        email_param = self.request.query_params.get('email', '').strip()
+
+        email_param = (
+            self.request
+            .query_params
+            .get('email', '')
+            .strip()
+        )
 
         if email_param:
+
             return (
                 Order.objects
-                .filter(email__iexact=email_param)
-                .prefetch_related('items__product')
-                .order_by('-created_at')
+                .filter(
+                    email__iexact=email_param
+                )
+                .prefetch_related(
+                    'items__product'
+                )
+                .order_by(
+                    '-created_at'
+                )
             )
 
         return Order.objects.none()
+
 
 class OrderDetailView(generics.RetrieveAPIView):
     serializer_class = OrderSerializer
@@ -439,7 +835,15 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Order.objects.all().prefetch_related('items__product')
+
+        return (
+            Order.objects
+            .all()
+            .prefetch_related(
+                'items__product'
+            )
+        )
+
 
 # --- Reviews ---
 
@@ -447,21 +851,37 @@ class ReviewCreateView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        product_id = request.data.get('product_id')
-        rating = request.data.get('rating')
-        comment = request.data.get('comment')
 
-        product = get_object_or_404(Product, id=product_id)
+        product_id = request.data.get(
+            'product_id'
+        )
+
+        rating = request.data.get(
+            'rating'
+        )
+
+        comment = request.data.get(
+            'comment'
+        )
+
+        product = get_object_or_404(
+            Product,
+            id=product_id
+        )
 
         review = Review.objects.create(
             product=product,
             rating=rating,
             comment=comment
         )
+
         return Response(
-            ReviewSerializer(review).data,
+            ReviewSerializer(
+                review
+            ).data,
             status=status.HTTP_201_CREATED
         )
+
 
 # --- AI Assistant ---
 
@@ -469,12 +889,32 @@ class AIAssistantView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        prompt = request.data.get('prompt', '').strip()
-        if not prompt:
-            return Response({'error': 'Question prompt is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        response_text = query_fimiku_assistant(prompt)
-        return Response({'reply': response_text})
+        prompt = request.data.get(
+            'prompt',
+            ''
+        ).strip()
+
+        if not prompt:
+            return Response(
+                {
+                    'error': (
+                        'Question prompt is required.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        response_text = (
+            query_fimiku_assistant(
+                prompt
+            )
+        )
+
+        return Response({
+            'reply': response_text
+        })
+
 
 # --- Admin Quick Stats ---
 
@@ -482,15 +922,43 @@ class AdminStatsView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        total_products = Product.objects.count()
-        total_orders = Order.objects.count()
-        total_revenue = sum(o.total_amount for o in Order.objects.filter(payment_status='PAID'))
-        low_stock = Product.objects.filter(stock__lte=10, is_active=True).values('id', 'name', 'stock')
+
+        total_products = (
+            Product.objects.count()
+        )
+
+        total_orders = (
+            Order.objects.count()
+        )
+
+        total_revenue = sum(
+            o.total_amount
+            for o in Order.objects.filter(
+                payment_status='PAID'
+            )
+        )
+
+        low_stock = (
+            Product.objects
+            .filter(
+                stock__lte=10,
+                is_active=True
+            )
+            .values(
+                'id',
+                'name',
+                'stock'
+            )
+        )
 
         return Response({
             'total_products': total_products,
             'total_orders': total_orders,
-            'total_revenue': float(total_revenue),
+            'total_revenue': float(
+                total_revenue
+            ),
             'low_stock_count': low_stock.count(),
-            'low_stock_products': list(low_stock)
+            'low_stock_products': list(
+                low_stock
+            )
         })
