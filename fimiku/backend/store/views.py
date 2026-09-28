@@ -104,25 +104,15 @@ class CartView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def _get_cart(self, request):
-        session_key = request.headers.get('X-Session-Key')
-        if request.user.is_authenticated:
-            cart, _ = Cart.objects.get_or_create(user=request.user)
-            # Auto-merge guest cart items into authenticated user cart
-            if session_key:
-                guest_cart = Cart.objects.filter(session_key=session_key).first()
-                if guest_cart and guest_cart.id != cart.id:
-                    for g_item in guest_cart.items.all():
-                        u_item, created = CartItem.objects.get_or_create(cart=cart, product=g_item.product)
-                        if not created:
-                            u_item.quantity = min(g_item.product.stock, u_item.quantity + g_item.quantity)
-                        else:
-                            u_item.quantity = min(g_item.product.stock, g_item.quantity)
-                        u_item.save()
-                    guest_cart.delete()
-        else:
-            if not session_key:
-                session_key = request.data.get('session_key', 'guest-' + str(uuid.uuid4())[:8])
-            cart, _ = Cart.objects.get_or_create(session_key=session_key)
+        # Mongo-safe guest cart: identify the cart only by the frontend session key.
+        session_key = (
+            request.headers.get('X-Session-Key')
+            or request.data.get('session_key')
+        )
+        if not session_key:
+            session_key = 'guest-' + str(uuid.uuid4())[:8]
+
+        cart, _ = Cart.objects.get_or_create(session_key=session_key)
         return cart
 
     def get(self, request):
@@ -190,21 +180,13 @@ class WishlistView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def _get_wishlist(self, request):
-        session_key = request.headers.get('X-Session-Key')
-        if request.user.is_authenticated:
-            wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
-            # Auto-merge guest wishlist items into user wishlist
-            if session_key:
-                guest_wl = Wishlist.objects.filter(session_key=session_key).first()
-                if guest_wl and guest_wl.id != wishlist.id:
-                    for prod in guest_wl.products.all():
-                        wishlist.products.add(prod)
-                    guest_wl.delete()
-                    sync_wishlist_to_mongo(wishlist)
-        else:
-            if not session_key:
-                session_key = 'guest-wishlist'
-            wishlist, _ = Wishlist.objects.get_or_create(session_key=session_key)
+        # Mongo-safe guest wishlist: identify it only by the frontend session key.
+        session_key = (
+            request.headers.get('X-Session-Key')
+            or request.data.get('session_key')
+            or 'guest-wishlist'
+        )
+        wishlist, _ = Wishlist.objects.get_or_create(session_key=session_key)
         return wishlist
 
     def get(self, request):
@@ -272,15 +254,45 @@ class CreateRazorpayOrderView(views.APIView):
         if not items_data:
             return Response({'error': 'No items selected for order.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        subtotal = sum(Decimal(str(item['price'])) * int(item['quantity']) for item in items_data)
+        # Calculate the subtotal from the database prices, not client-supplied prices.
+        subtotal = Decimal('0')
+        for item in items_data:
+            prod = Product.objects.filter(id=item.get('product_id')).first()
+            unit_price = Decimal(str(
+                prod.discount_price if prod.discount_price is not None else prod.price
+            ))
+            subtotal += unit_price * int(item.get('quantity', 1))
+
         discount = Decimal(str(data.get('discount_amount', 0)))
+        discount = max(Decimal('0'), min(discount, subtotal))
         total = max(Decimal('0'), subtotal - discount)
         amount_paise = int(total * 100)
 
-        # Check stock validity before creating order
+        # Validate every product and its stock before creating anything.
         for item in items_data:
-            prod = Product.objects.filter(id=item.get('product_id')).first()
-            if prod and prod.stock < int(item['quantity']):
+            product_id = item.get('product_id')
+            quantity = int(item.get('quantity', 1))
+
+            if not product_id:
+                return Response(
+                    {'error': 'A product_id is missing from the order.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            prod = Product.objects.filter(id=product_id).first()
+            if not prod:
+                return Response(
+                    {'error': f"Product '{product_id}' was not found."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if quantity < 1:
+                return Response(
+                    {'error': 'Quantity must be at least 1.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if prod.stock < quantity:
                 return Response(
                     {'error': f"Product '{prod.name}' only has {prod.stock} left in stock."},
                     status=status.HTTP_400_BAD_REQUEST
@@ -323,12 +335,22 @@ class CreateRazorpayOrderView(views.APIView):
 
         for item in items_data:
             prod = Product.objects.filter(id=item.get('product_id')).first()
+            if not prod:
+                return Response(
+                    {'error': f"Product '{item.get('product_id')}' was not found while saving the order."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            unit_price = Decimal(str(
+                prod.discount_price if prod.discount_price is not None else prod.price
+            ))
+
             OrderItem.objects.create(
                 order=order,
                 product=prod,
-                product_name=item.get('name', 'Silicone Essential'),
-                price=Decimal(str(item['price'])),
-                quantity=int(item['quantity'])
+                product_name=prod.name,
+                price=unit_price,
+                quantity=int(item.get('quantity', 1))
             )
 
         return Response({
@@ -380,13 +402,10 @@ class VerifyPaymentView(views.APIView):
                 item.product.stock = max(0, item.product.stock - item.quantity)
                 item.product.save()
 
-        # Clear active cart for the user or session
-        if request.user.is_authenticated:
-            Cart.objects.filter(user=request.user).delete()
-        else:
-            session_key = request.headers.get('X-Session-Key')
-            if session_key:
-                Cart.objects.filter(session_key=session_key).delete()
+        # Clear the guest cart using the same session key used by the frontend.
+        session_key = request.headers.get('X-Session-Key')
+        if session_key:
+            Cart.objects.filter(session_key=session_key).delete()
 
         # Sync completed order to MongoDB Atlas
         sync_order_to_mongo(order)
@@ -403,14 +422,15 @@ class OrderListView(generics.ListAPIView):
 
     def get_queryset(self):
         email_param = self.request.query_params.get('email', '').strip()
-        if self.request.user.is_authenticated:
-            return Order.objects.filter(
-                Q(user=self.request.user) | Q(email__iexact=self.request.user.email)
-            ).prefetch_related('items__product').order_by('-created_at')
-        elif email_param:
-            return Order.objects.filter(
-                email__iexact=email_param
-            ).prefetch_related('items__product').order_by('-created_at')
+
+        if email_param:
+            return (
+                Order.objects
+                .filter(email__iexact=email_param)
+                .prefetch_related('items__product')
+                .order_by('-created_at')
+            )
+
         return Order.objects.none()
 
 class OrderDetailView(generics.RetrieveAPIView):
@@ -432,13 +452,16 @@ class ReviewCreateView(views.APIView):
         comment = request.data.get('comment')
 
         product = get_object_or_404(Product, id=product_id)
+
         review = Review.objects.create(
             product=product,
-            user=request.user,
             rating=rating,
             comment=comment
         )
-        return Response(ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ReviewSerializer(review).data,
+            status=status.HTTP_201_CREATED
+        )
 
 # --- AI Assistant ---
 
