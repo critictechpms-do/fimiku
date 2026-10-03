@@ -1,35 +1,70 @@
 import os
 import uuid
 import razorpay
+
 from decimal import Decimal
+
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+
 from rest_framework import generics, status, views, permissions
 from rest_framework.response import Response
 
 from django.utils import timezone
+
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Category, Product, Cart, CartItem, Wishlist, Coupon, Order, OrderItem, Review
-from .serializers import (
-    UserRegisterSerializer, UserSerializer, CategorySerializer,
-    ProductSerializer, CartSerializer, WishlistSerializer,
-    CouponSerializer, OrderSerializer, ReviewSerializer
+from .models import (
+    Category,
+    Product,
+    Cart,
+    CartItem,
+    Wishlist,
+    Coupon,
+    Order,
+    OrderItem,
+    Review
 )
-from .gemini_service import query_fimiku_assistant
-from .mongo_client import sync_wishlist_to_mongo, sync_order_to_mongo, sync_user_to_mongo
 
-# --- Authentication Views ---
+from .serializers import (
+    UserRegisterSerializer,
+    UserSerializer,
+    CategorySerializer,
+    ProductSerializer,
+    CartSerializer,
+    WishlistSerializer,
+    CouponSerializer,
+    OrderSerializer,
+    ReviewSerializer
+)
+
+from .gemini_service import query_fimiku_assistant
+
+from .mongo_client import (
+    sync_wishlist_to_mongo,
+    sync_order_to_mongo,
+    sync_user_to_mongo
+)
+
+
+# =========================================================
+# AUTHENTICATION VIEWS
+# =========================================================
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        self.user.last_login = timezone.now()
-        self.user.save(update_fields=['last_login'])
 
-        # Sync user state and encrypted password hash to MongoDB Atlas
+    def validate(self, attrs):
+
+        data = super().validate(attrs)
+
+        self.user.last_login = timezone.now()
+
+        self.user.save(
+            update_fields=['last_login']
+        )
+
         sync_user_to_mongo(self.user)
 
         data['user'] = {
@@ -44,36 +79,65 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+
     serializer_class = CustomTokenObtainPairSerializer
 
 
 class RegisterView(generics.CreateAPIView):
+
     serializer_class = UserRegisterSerializer
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
 
 class MeView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
 
     def get(self, request):
-        sync_user_to_mongo(request.user)
-        return Response(UserSerializer(request.user).data)
+
+        sync_user_to_mongo(
+            request.user
+        )
+
+        return Response(
+            UserSerializer(
+                request.user
+            ).data
+        )
 
 
-# --- Catalog Views ---
+# =========================================================
+# CATALOG VIEWS
+# =========================================================
 
 class CategoryListView(generics.ListAPIView):
+
     queryset = Category.objects.all()
+
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
+
     pagination_class = None
 
 
 class ProductListView(generics.ListAPIView):
+
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def get_queryset(self):
+
         queryset = (
             Product.objects
             .filter(is_active=True)
@@ -81,18 +145,31 @@ class ProductListView(generics.ListAPIView):
             .prefetch_related('reviews')
         )
 
-        category = self.request.query_params.get('category')
-        search = self.request.query_params.get('search')
-        featured = self.request.query_params.get('featured')
-        sort = self.request.query_params.get('sort')
+        category = self.request.query_params.get(
+            'category'
+        )
+
+        search = self.request.query_params.get(
+            'search'
+        )
+
+        featured = self.request.query_params.get(
+            'featured'
+        )
+
+        sort = self.request.query_params.get(
+            'sort'
+        )
 
         if category:
+
             queryset = queryset.filter(
                 Q(category__slug=category) |
                 Q(category__name__iexact=category)
             )
 
         if search:
+
             queryset = queryset.filter(
                 Q(name__icontains=search) |
                 Q(description__icontains=search) |
@@ -100,39 +177,74 @@ class ProductListView(generics.ListAPIView):
             )
 
         if featured and featured.lower() == 'true':
-            queryset = queryset.filter(is_featured=True)
+
+            queryset = queryset.filter(
+                is_featured=True
+            )
 
         if sort == 'price_low':
-            queryset = queryset.order_by('price')
+
+            queryset = queryset.order_by(
+                'price'
+            )
+
         elif sort == 'price_high':
-            queryset = queryset.order_by('-price')
+
+            queryset = queryset.order_by(
+                '-price'
+            )
+
         elif sort == 'newest':
-            queryset = queryset.order_by('-created_at')
+
+            queryset = queryset.order_by(
+                '-created_at'
+            )
 
         return queryset
 
 
 class ProductDetailView(generics.RetrieveAPIView):
-    queryset = Product.objects.filter(is_active=True)
+
+    queryset = Product.objects.filter(
+        is_active=True
+    )
+
     serializer_class = ProductSerializer
+
     lookup_field = 'id'
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
 
-# --- Cart Views ---
+# =========================================================
+# CART VIEWS
+# =========================================================
 
 class CartView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def _get_cart(self, request):
-        # Mongo-safe guest cart: identify the cart only by the frontend session key.
+
         session_key = (
-            request.headers.get('X-Session-Key')
-            or request.data.get('session_key')
+            request.headers.get(
+                'X-Session-Key'
+            )
+            or request.data.get(
+                'session_key'
+            )
         )
 
         if not session_key:
-            session_key = 'guest-' + str(uuid.uuid4())[:8]
+
+            session_key = (
+                'guest-' +
+                str(uuid.uuid4())[:8]
+            )
 
         cart, _ = Cart.objects.get_or_create(
             session_key=session_key
@@ -141,14 +253,33 @@ class CartView(views.APIView):
         return cart
 
     def get(self, request):
-        cart = self._get_cart(request)
-        return Response(CartSerializer(cart).data)
+
+        cart = self._get_cart(
+            request
+        )
+
+        return Response(
+            CartSerializer(
+                cart
+            ).data
+        )
 
     def post(self, request):
-        cart = self._get_cart(request)
 
-        product_id = request.data.get('product_id')
-        quantity = int(request.data.get('quantity', 1))
+        cart = self._get_cart(
+            request
+        )
+
+        product_id = request.data.get(
+            'product_id'
+        )
+
+        quantity = int(
+            request.data.get(
+                'quantity',
+                1
+            )
+        )
 
         product = get_object_or_404(
             Product,
@@ -156,12 +287,12 @@ class CartView(views.APIView):
         )
 
         if product.stock < quantity:
+
             return Response(
                 {
-                    'error': (
+                    'error':
                         f"Only {product.stock} items "
                         f"available in stock."
-                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -172,36 +303,48 @@ class CartView(views.APIView):
         )
 
         if not created:
-            new_qty = item.quantity + quantity
+
+            new_qty = (
+                item.quantity +
+                quantity
+            )
 
             if product.stock < new_qty:
+
                 return Response(
                     {
-                        'error': (
+                        'error':
                             f"Cannot add more. Total in cart "
                             f"({new_qty}) exceeds stock "
                             f"({product.stock})."
-                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             item.quantity = new_qty
+
         else:
+
             item.quantity = quantity
 
         item.save()
 
         return Response(
-            CartSerializer(cart).data
+            CartSerializer(
+                cart
+            ).data
         )
 
     def put(self, request):
-        """Update item quantity directly"""
 
-        cart = self._get_cart(request)
+        cart = self._get_cart(
+            request
+        )
 
-        item_id = request.data.get('item_id')
+        item_id = request.data.get(
+            'item_id'
+        )
+
         quantity = int(
             request.data.get(
                 'quantity',
@@ -216,57 +359,81 @@ class CartView(views.APIView):
         )
 
         if quantity <= 0:
+
             item.delete()
+
         else:
+
             if item.product.stock < quantity:
+
                 return Response(
                     {
-                        'error': (
+                        'error':
                             f"Only {item.product.stock} "
                             f"units available in stock."
-                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             item.quantity = quantity
+
             item.save()
 
         return Response(
-            CartSerializer(cart).data
+            CartSerializer(
+                cart
+            ).data
         )
 
     def delete(self, request):
-        cart = self._get_cart(request)
 
-        item_id = request.data.get('item_id')
+        cart = self._get_cart(
+            request
+        )
+
+        item_id = request.data.get(
+            'item_id'
+        )
 
         if item_id:
+
             CartItem.objects.filter(
                 cart=cart,
                 id=item_id
             ).delete()
+
         else:
-            # Clear entire cart
+
             CartItem.objects.filter(
                 cart=cart
             ).delete()
 
         return Response(
-            CartSerializer(cart).data
+            CartSerializer(
+                cart
+            ).data
         )
 
 
-# --- Wishlist Views ---
+# =========================================================
+# WISHLIST VIEWS
+# =========================================================
 
 class WishlistView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def _get_wishlist(self, request):
-        # Mongo-safe guest wishlist: identify it only by the frontend session key.
+
         session_key = (
-            request.headers.get('X-Session-Key')
-            or request.data.get('session_key')
+            request.headers.get(
+                'X-Session-Key'
+            )
+            or request.data.get(
+                'session_key'
+            )
             or 'guest-wishlist'
         )
 
@@ -277,16 +444,26 @@ class WishlistView(views.APIView):
         return wishlist
 
     def get(self, request):
-        wishlist = self._get_wishlist(request)
+
+        wishlist = self._get_wishlist(
+            request
+        )
 
         return Response(
-            WishlistSerializer(wishlist).data
+            WishlistSerializer(
+                wishlist
+            ).data
         )
 
     def post(self, request):
-        wishlist = self._get_wishlist(request)
 
-        product_id = request.data.get('product_id')
+        wishlist = self._get_wishlist(
+            request
+        )
+
+        product_id = request.data.get(
+            'product_id'
+        )
 
         product = get_object_or_404(
             Product,
@@ -297,29 +474,49 @@ class WishlistView(views.APIView):
             id=product.id
         ).exists():
 
-            wishlist.products.remove(product)
+            wishlist.products.remove(
+                product
+            )
+
             in_wishlist = False
 
         else:
-            wishlist.products.add(product)
+
+            wishlist.products.add(
+                product
+            )
+
             in_wishlist = True
 
-        sync_wishlist_to_mongo(wishlist)
+        sync_wishlist_to_mongo(
+            wishlist
+        )
 
-        return Response({
-            'in_wishlist': in_wishlist,
-            'wishlist': WishlistSerializer(
-                wishlist
-            ).data
-        })
+        return Response(
+            {
+                'in_wishlist':
+                    in_wishlist,
+
+                'wishlist':
+                    WishlistSerializer(
+                        wishlist
+                    ).data
+            }
+        )
 
 
-# --- Coupon Validation ---
+# =========================================================
+# COUPON VALIDATION
+# =========================================================
 
 class CouponValidateView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def post(self, request):
+
         code = request.data.get(
             'code',
             ''
@@ -335,78 +532,98 @@ class CouponValidateView(views.APIView):
         )
 
         try:
+
             coupon = Coupon.objects.get(
                 code=code,
                 is_active=True
             )
 
             if order_total < coupon.min_order_amount:
+
                 return Response(
                     {
-                        'error': (
+                        'error':
                             f"Minimum order amount for coupon "
                             f"'{code}' is ₹"
                             f"{coupon.min_order_amount}"
-                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             if coupon.discount_type == 'PERCENTAGE':
+
                 discount = (
-                    order_total * coupon.value
+                    order_total *
+                    coupon.value
                 ) / Decimal(100)
+
             else:
+
                 discount = coupon.value
 
-            return Response({
-                'valid': True,
-                'code': coupon.code,
-                'discount_amount': float(discount),
-                'discount_type': coupon.discount_type,
-                'value': float(coupon.value)
-            })
-
-        except Coupon.DoesNotExist:
             return Response(
                 {
-                    'error': (
+                    'valid': True,
+                    'code': coupon.code,
+                    'discount_amount':
+                        float(discount),
+                    'discount_type':
+                        coupon.discount_type,
+                    'value':
+                        float(coupon.value)
+                }
+            )
+
+        except Coupon.DoesNotExist:
+
+            return Response(
+                {
+                    'error':
                         'Invalid or expired coupon code.'
-                    )
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
 
-# --- Payment & Orders ---
+# =========================================================
+# PAYMENT & ORDERS
+# =========================================================
 
 class CreateRazorpayOrderView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def post(self, request):
+
         try:
+
             data = request.data
+
             items_data = data.get(
                 'items',
                 []
             )
 
             if not items_data:
+
                 return Response(
                     {
-                        'error': (
+                        'error':
                             'No items selected for order.'
-                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             validated_items = []
+
             subtotal = Decimal('0')
 
-            # -----------------------------------------
-            # VALIDATE PRODUCTS + STOCK + PRICE
-            # -----------------------------------------
+            # -------------------------------------------------
+            # VALIDATE PRODUCTS
+            # -------------------------------------------------
+
             for item in items_data:
 
                 product_id = item.get(
@@ -421,51 +638,48 @@ class CreateRazorpayOrderView(views.APIView):
                 )
 
                 if not product_id:
+
                     return Response(
                         {
-                            'error': (
+                            'error':
                                 'Product ID is missing.'
-                            )
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
                 if quantity < 1:
+
                     return Response(
                         {
-                            'error': (
+                            'error':
                                 'Quantity must be at least 1.'
-                            )
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
-                # IMPORTANT:
-                # Check that the product exists BEFORE
-                # reading product fields.
                 product = Product.objects.filter(
                     id=product_id
                 ).first()
 
                 if not product:
+
                     return Response(
                         {
-                            'error': (
+                            'error':
                                 f"Product '{product_id}' "
                                 f"was not found."
-                            )
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
                 if product.stock < quantity:
+
                     return Response(
                         {
-                            'error': (
+                            'error':
                                 f"Only {product.stock} units "
                                 f"of '{product.name}' are "
                                 f"available."
-                            )
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
@@ -483,27 +697,34 @@ class CreateRazorpayOrderView(views.APIView):
                 )
 
                 if discount_price is not None:
+
                     unit_price = Decimal(
                         str(discount_price)
                     )
+
                 else:
+
                     unit_price = Decimal(
                         str(normal_price)
                     )
 
                 subtotal += (
-                    unit_price * quantity
+                    unit_price *
+                    quantity
                 )
 
-                validated_items.append({
-                    'product': product,
-                    'quantity': quantity,
-                    'price': unit_price
-                })
+                validated_items.append(
+                    {
+                        'product': product,
+                        'quantity': quantity,
+                        'price': unit_price
+                    }
+                )
 
-            # -----------------------------------------
-            # APPLY DISCOUNT
-            # -----------------------------------------
+            # -------------------------------------------------
+            # DISCOUNT
+            # -------------------------------------------------
+
             discount = Decimal(
                 str(
                     data.get(
@@ -514,22 +735,26 @@ class CreateRazorpayOrderView(views.APIView):
             )
 
             if discount < 0:
+
                 discount = Decimal('0')
 
             if discount > subtotal:
+
                 discount = subtotal
 
             total = (
-                subtotal - discount
+                subtotal -
+                discount
             )
 
             amount_paise = int(
                 total * 100
             )
 
-            # -----------------------------------------
+            # -------------------------------------------------
             # RAZORPAY CONFIGURATION
-            # -----------------------------------------
+            # -------------------------------------------------
+
             key_id = getattr(
                 settings,
                 'RAZORPAY_KEY_ID',
@@ -549,9 +774,10 @@ class CreateRazorpayOrderView(views.APIView):
                 or 'placeholder' in key_secret.lower()
             )
 
-            # -----------------------------------------
+            # -------------------------------------------------
             # CREATE RAZORPAY ORDER
-            # -----------------------------------------
+            # -------------------------------------------------
+
             if is_mock:
 
                 razorpay_order_id = (
@@ -570,109 +796,162 @@ class CreateRazorpayOrderView(views.APIView):
                         )
                     )
 
-                    razorpay_order = client.order.create({
-                        'amount': (
-                            amount_paise
-                            if amount_paise > 0
-                            else 100
-                        ),
-                        'currency': 'INR',
-                        'payment_capture': '1'
-                    })
+                    razorpay_order = client.order.create(
+                        {
+                            'amount':
+                                (
+                                    amount_paise
+                                    if amount_paise > 0
+                                    else 100
+                                ),
+                            'currency':
+                                'INR',
+                            'payment_capture':
+                                '1'
+                        }
+                    )
 
                     razorpay_order_id = (
                         razorpay_order['id']
                     )
 
-                except Exception:
-                    # Development fallback
+                except Exception as e:
+
+                    print(
+                        f"[Razorpay Order Error] {e}"
+                    )
+
                     razorpay_order_id = (
                         f"order_dev_"
                         f"{uuid.uuid4().hex[:12]}"
                     )
 
-            # -----------------------------------------
+            # -------------------------------------------------
             # CREATE DATABASE ORDER
-            # -----------------------------------------
+            # -------------------------------------------------
+
             order = Order.objects.create(
+
                 full_name=data.get(
                     'full_name',
                     'Guest Parent'
                 ),
+
                 email=data.get(
                     'email',
                     'guest@fimiku.com'
                 ),
+
                 phone=data.get(
                     'phone',
                     '9876543210'
                 ),
+
                 shipping_address=data.get(
                     'shipping_address',
                     'Address'
                 ),
+
                 city=data.get(
                     'city',
                     'City'
                 ),
+
                 postal_code=data.get(
                     'postal_code',
                     '000000'
                 ),
+
                 state=data.get(
                     'state',
                     'State'
                 ),
+
                 total_amount=total,
+
                 discount_amount=discount,
-                razorpay_order_id=razorpay_order_id,
+
+                razorpay_order_id=
+                    razorpay_order_id,
+
                 payment_status='INITIATED'
             )
 
-            # -----------------------------------------
+            # -------------------------------------------------
             # CREATE ORDER ITEMS
-            # -----------------------------------------
+            # -------------------------------------------------
+
             for item in validated_items:
 
                 OrderItem.objects.create(
+
                     order=order,
+
                     product=item['product'],
-                    product_name=item['product'].name,
+
+                    product_name=
+                        item['product'].name,
+
                     price=item['price'],
+
                     quantity=item['quantity']
                 )
 
-            # -----------------------------------------
-            # SUCCESS RESPONSE
-            # -----------------------------------------
-            return Response({
-                'order_id': str(order.id),
-                'razorpay_order_id': razorpay_order_id,
-                'amount': amount_paise,
-                'currency': 'INR',
-                'key_id': (
-                    key_id
-                    if key_id
-                    else 'rzp_test_placeholder'
-                ),
-                'is_mock': is_mock
-            })
-
-        except Exception as e:
+            # -------------------------------------------------
+            # SUCCESS
+            # -------------------------------------------------
 
             return Response(
                 {
-                    'error': (
-                        f'Order creation failed: '
-                        f'{str(e)}'
-                    )
+                    'order_id':
+                        str(order.id),
+
+                    'razorpay_order_id':
+                        str(razorpay_order_id),
+
+                    'amount':
+                        amount_paise,
+
+                    'currency':
+                        'INR',
+
+                    'key_id':
+                        (
+                            key_id
+                            if key_id
+                            else 'rzp_test_placeholder'
+                        ),
+
+                    'is_mock':
+                        is_mock
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+
+            print(
+                f"[Order Creation Error] {e}"
+            )
+
+            return Response(
+                {
+                    'error':
+                        f'Order creation failed: {str(e)}'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
 
+# =========================================================
+# VERIFY PAYMENT
+# =========================================================
+
 class VerifyPaymentView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def post(self, request):
 
@@ -690,19 +969,25 @@ class VerifyPaymentView(views.APIView):
         )
 
         try:
+
             order = Order.objects.get(
-                razorpay_order_id=razorpay_order_id
+                razorpay_order_id=
+                    razorpay_order_id
             )
 
         except Order.DoesNotExist:
+
             return Response(
                 {
-                    'error': (
+                    'error':
                         'Order not found.'
-                    )
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        # -------------------------------------------------
+        # RAZORPAY CONFIGURATION
+        # -------------------------------------------------
 
         key_id = getattr(
             settings,
@@ -723,12 +1008,17 @@ class VerifyPaymentView(views.APIView):
             or 'placeholder' in key_secret.lower()
         )
 
+        # -------------------------------------------------
+        # VERIFY RAZORPAY PAYMENT
+        # -------------------------------------------------
+
         if (
             not is_sandbox_mock
             and razorpay_signature
         ):
 
             try:
+
                 client = razorpay.Client(
                     auth=(
                         key_id,
@@ -736,32 +1026,52 @@ class VerifyPaymentView(views.APIView):
                     )
                 )
 
-                client.utility.verify_payment_signature({
-                    'razorpay_order_id': razorpay_order_id,
-                    'razorpay_payment_id': razorpay_payment_id,
-                    'razorpay_signature': razorpay_signature
-                })
+                client.utility.verify_payment_signature(
+                    {
+                        'razorpay_order_id':
+                            razorpay_order_id,
+
+                        'razorpay_payment_id':
+                            razorpay_payment_id,
+
+                        'razorpay_signature':
+                            razorpay_signature
+                    }
+                )
 
             except Exception as e:
+
+                print(
+                    f"[Razorpay Verification Error] {e}"
+                )
+
                 return Response(
                     {
-                        'error': (
+                        'error':
                             'Payment signature '
                             f'verification failed: {str(e)}'
-                        )
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Mark order as PAID
+        # -------------------------------------------------
+        # MARK ORDER AS PAID
+        # -------------------------------------------------
+
         order.payment_status = 'PAID'
+
         order.order_status = 'PROCESSING'
+
         order.razorpay_payment_id = (
             razorpay_payment_id
         )
+
         order.save()
 
-        # Deduct inventory
+        # -------------------------------------------------
+        # DEDUCT INVENTORY
+        # -------------------------------------------------
+
         for item in order.items.all():
 
             if item.product:
@@ -774,40 +1084,98 @@ class VerifyPaymentView(views.APIView):
 
                 item.product.save()
 
-        # Clear guest cart
+        # -------------------------------------------------
+        # CLEAR GUEST CART
+        # -------------------------------------------------
+
         session_key = request.headers.get(
             'X-Session-Key'
         )
 
         if session_key:
+
             Cart.objects.filter(
                 session_key=session_key
             ).delete()
 
-        # Sync order to MongoDB
-        sync_order_to_mongo(order)
+        # -------------------------------------------------
+        # SYNC ORDER TO MONGODB
+        # -------------------------------------------------
 
-        return Response({
-            'status': (
-                'Payment Verified Successfully'
-            ),
-            'order_id': order.id,
-            'order': OrderSerializer(
+        try:
+
+            sync_order_to_mongo(
                 order
-            ).data
-        })
+            )
 
+        except Exception as e:
+
+            # Do not make a successful payment
+            # look like a failed payment just
+            # because MongoDB sync failed.
+
+            print(
+                f"[MongoDB Sync Warning] {e}"
+            )
+
+        # -------------------------------------------------
+        # PAYMENT SUCCESS RESPONSE
+        #
+        # IMPORTANT:
+        # Do NOT serialize the entire Order object here.
+        # Mongo/ObjectId based IDs can cause a 500.
+        # -------------------------------------------------
+
+        return Response(
+            {
+                'status':
+                    'Payment Verified Successfully',
+
+                'message':
+                    'Order placed successfully',
+
+                'order_id':
+                    str(order.id),
+
+                'razorpay_order_id':
+                    str(order.razorpay_order_id),
+
+                'razorpay_payment_id':
+                    str(
+                        order.razorpay_payment_id
+                    ),
+
+                'payment_status':
+                    str(order.payment_status),
+
+                'order_status':
+                    str(order.order_status)
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+# =========================================================
+# ORDER LIST
+# =========================================================
 
 class OrderListView(generics.ListAPIView):
+
     serializer_class = OrderSerializer
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def get_queryset(self):
 
         email_param = (
             self.request
             .query_params
-            .get('email', '')
+            .get(
+                'email',
+                ''
+            )
             .strip()
         )
 
@@ -830,9 +1198,14 @@ class OrderListView(generics.ListAPIView):
 
 
 class OrderDetailView(generics.RetrieveAPIView):
+
     serializer_class = OrderSerializer
+
     lookup_field = 'id'
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def get_queryset(self):
 
@@ -845,10 +1218,15 @@ class OrderDetailView(generics.RetrieveAPIView):
         )
 
 
-# --- Reviews ---
+# =========================================================
+# REVIEWS
+# =========================================================
 
 class ReviewCreateView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
 
     def post(self, request):
 
@@ -883,10 +1261,15 @@ class ReviewCreateView(views.APIView):
         )
 
 
-# --- AI Assistant ---
+# =========================================================
+# AI ASSISTANT
+# =========================================================
 
 class AIAssistantView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def post(self, request):
 
@@ -896,11 +1279,11 @@ class AIAssistantView(views.APIView):
         ).strip()
 
         if not prompt:
+
             return Response(
                 {
-                    'error': (
+                    'error':
                         'Question prompt is required.'
-                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -911,15 +1294,23 @@ class AIAssistantView(views.APIView):
             )
         )
 
-        return Response({
-            'reply': response_text
-        })
+        return Response(
+            {
+                'reply':
+                    response_text
+            }
+        )
 
 
-# --- Admin Quick Stats ---
+# =========================================================
+# ADMIN QUICK STATS
+# =========================================================
 
 class AdminStatsView(views.APIView):
-    permission_classes = [permissions.AllowAny]
+
+    permission_classes = [
+        permissions.AllowAny
+    ]
 
     def get(self, request):
 
@@ -951,14 +1342,23 @@ class AdminStatsView(views.APIView):
             )
         )
 
-        return Response({
-            'total_products': total_products,
-            'total_orders': total_orders,
-            'total_revenue': float(
-                total_revenue
-            ),
-            'low_stock_count': low_stock.count(),
-            'low_stock_products': list(
-                low_stock
-            )
-        })
+        return Response(
+            {
+                'total_products':
+                    total_products,
+
+                'total_orders':
+                    total_orders,
+
+                'total_revenue':
+                    float(
+                        total_revenue
+                    ),
+
+                'low_stock_count':
+                    low_stock.count(),
+
+                'low_stock_products':
+                    list(low_stock)
+            }
+        )
