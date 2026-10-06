@@ -21,22 +21,70 @@ from .views import (
     AdminStatsView,
 )
 
+
 urlpatterns = [
     # Auth endpoints
-    path('auth/register/', RegisterView.as_view(), name='register'),
-    path('auth/login/', CustomTokenObtainPairView.as_view(), name='login'),
-    path('auth/token/refresh/', TokenRefreshView.as_view(), name='refresh'),
-    path('auth/me/', MeView.as_view(), name='me'),
+    path(
+        'auth/register/',
+        RegisterView.as_view(),
+        name='register'
+    ),
+
+    path(
+        'auth/login/',
+        CustomTokenObtainPairView.as_view(),
+        name='login'
+    ),
+
+    path(
+        'auth/token/refresh/',
+        TokenRefreshView.as_view(),
+        name='refresh'
+    ),
+
+    path(
+        'auth/me/',
+        MeView.as_view(),
+        name='me'
+    ),
 
     # Catalog endpoints
-    path('categories/', CategoryListView.as_view(), name='categories'),
-    path('products/', ProductListView.as_view(), name='products'),
-    path('products/<str:id>/', ProductDetailView.as_view(), name='product_detail'),
+    path(
+        'categories/',
+        CategoryListView.as_view(),
+        name='categories'
+    ),
+
+    path(
+        'products/',
+        ProductListView.as_view(),
+        name='products'
+    ),
+
+    path(
+        'products/<str:id>/',
+        ProductDetailView.as_view(),
+        name='product_detail'
+    ),
 
     # Cart & Wishlist
-    path('cart/', CartView.as_view(), name='cart'),
-    path('wishlist/', WishlistView.as_view(), name='wishlist'),
-    path('coupons/validate/', CouponValidateView.as_view(), name='coupon_validate'),
+    path(
+        'cart/',
+        CartView.as_view(),
+        name='cart'
+    ),
+
+    path(
+        'wishlist/',
+        WishlistView.as_view(),
+        name='wishlist'
+    ),
+
+    path(
+        'coupons/validate/',
+        CouponValidateView.as_view(),
+        name='coupon_validate'
+    ),
 
     # Orders & Payments
     path(
@@ -57,19 +105,35 @@ urlpatterns = [
         name='verify_payment'
     ),
 
-    path('orders/', OrderListView.as_view(), name='orders_list'),
-    path('orders/<str:id>/', OrderDetailView.as_view(), name='order_detail'),
+    path(
+        'orders/',
+        OrderListView.as_view(),
+        name='orders_list'
+    ),
+
+    path(
+        'orders/<str:id>/',
+        OrderDetailView.as_view(),
+        name='order_detail'
+    ),
 
     # Reviews & AI
-    path('reviews/', ReviewCreateView.as_view(), name='create_review'),
-    path('ai/assistant/', AIAssistantView.as_view(), name='ai_assistant'),
+    path(
+        'reviews/',
+        ReviewCreateView.as_view(),
+        name='create_review'
+    ),
+
+    path(
+        'ai/assistant/',
+        AIAssistantView.as_view(),
+        name='ai_assistant'
+    ),
 
     # Admin Stats
-    path('admin-stats/', AdminStatsView.as_view(), name='admin_stats'),
-    path('update-product-images/', UpdateProductImagesView.as_view(), name='update_product_images'),
     path(
-    'update-product-images/',
-    views.UpdateProductImagesView.as_view(),
-    name='update_product_images'
-),
+        'admin-stats/',
+        AdminStatsView.as_view(),
+        name='admin_stats'
+    ),
 ]
