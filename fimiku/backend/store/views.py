@@ -943,50 +943,83 @@ class CreateRazorpayOrderView(views.APIView):
             )
 
 
-
 # =========================================================
 # CASH ON DELIVERY
 # =========================================================
 
 class CreateCODOrderView(views.APIView):
+
     """Create and confirm a Cash-on-Delivery order."""
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+
         try:
+
             data = request.data
-            items_data = data.get('items', [])
+
+            items_data = data.get(
+                'items',
+                []
+            )
 
             if not items_data:
+
                 return Response(
-                    {'error': 'No items selected for order.'},
+                    {
+                        'error':
+                            'No items selected for order.'
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             validated_items = []
+
             subtotal = Decimal('0')
 
             for item in items_data:
-                product_id = item.get('product_id')
+
+                product_id = item.get(
+                    'product_id'
+                )
 
                 try:
-                    quantity = int(item.get('quantity', 1))
+
+                    quantity = int(
+                        item.get(
+                            'quantity',
+                            1
+                        )
+                    )
+
                 except (TypeError, ValueError):
+
                     return Response(
-                        {'error': 'Invalid product quantity.'},
+                        {
+                            'error':
+                                'Invalid product quantity.'
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
                 if not product_id:
+
                     return Response(
-                        {'error': 'Product ID is missing.'},
+                        {
+                            'error':
+                                'Product ID is missing.'
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
                 if quantity < 1:
+
                     return Response(
-                        {'error': 'Quantity must be at least 1.'},
+                        {
+                            'error':
+                                'Quantity must be at least 1.'
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -996,6 +1029,7 @@ class CreateCODOrderView(views.APIView):
                 ).first()
 
                 if not product:
+
                     return Response(
                         {
                             'error':
@@ -1005,6 +1039,7 @@ class CreateCODOrderView(views.APIView):
                     )
 
                 if product.stock < quantity:
+
                     return Response(
                         {
                             'error':
@@ -1015,10 +1050,15 @@ class CreateCODOrderView(views.APIView):
                     )
 
                 discount_price = getattr(
-                    product, 'discount_price', None
+                    product,
+                    'discount_price',
+                    None
                 )
+
                 normal_price = getattr(
-                    product, 'price', 0
+                    product,
+                    'price',
+                    0
                 )
 
                 unit_price = (
@@ -1029,107 +1069,182 @@ class CreateCODOrderView(views.APIView):
 
                 subtotal += unit_price * quantity
 
-                validated_items.append({
-                    'product': product,
-                    'quantity': quantity,
-                    'price': unit_price
-                })
+                validated_items.append(
+                    {
+                        'product': product,
+                        'quantity': quantity,
+                        'price': unit_price
+                    }
+                )
 
             try:
+
                 discount = Decimal(
-                    str(data.get('discount_amount', 0))
+                    str(
+                        data.get(
+                            'discount_amount',
+                            0
+                        )
+                    )
                 )
+
             except Exception:
+
                 discount = Decimal('0')
 
-            discount = max(Decimal('0'), discount)
-            discount = min(discount, subtotal)
+            discount = max(
+                Decimal('0'),
+                discount
+            )
+
+            discount = min(
+                discount,
+                subtotal
+            )
+
             total = subtotal - discount
 
             order = Order.objects.create(
+
                 full_name=data.get(
-                    'full_name', 'Guest Parent'
+                    'full_name',
+                    'Guest Parent'
                 ),
+
                 email=data.get(
-                    'email', 'guest@fimiku.com'
+                    'email',
+                    'guest@fimiku.com'
                 ),
+
                 phone=data.get(
-                    'phone', '9876543210'
+                    'phone',
+                    '9876543210'
                 ),
+
                 shipping_address=data.get(
-                    'shipping_address', 'Address'
+                    'shipping_address',
+                    'Address'
                 ),
+
                 city=data.get(
-                    'city', 'City'
+                    'city',
+                    'City'
                 ),
+
                 postal_code=data.get(
-                    'postal_code', '000000'
+                    'postal_code',
+                    '000000'
                 ),
+
                 state=data.get(
-                    'state', 'State'
+                    'state',
+                    'State'
                 ),
+
                 total_amount=total,
+
                 discount_amount=discount,
+
                 razorpay_order_id=(
                     f"cod_{uuid.uuid4().hex[:16]}"
                 ),
+
                 payment_status='COD',
+
                 order_status='PROCESSING'
             )
 
             for item in validated_items:
+
                 OrderItem.objects.create(
+
                     order=order,
+
                     product=item['product'],
+
                     product_name=item['product'].name,
+
                     price=item['price'],
+
                     quantity=item['quantity']
                 )
 
             for item in validated_items:
+
                 product = item['product']
+
                 product.stock = max(
                     0,
                     product.stock - item['quantity']
                 )
-                product.save(update_fields=['stock'])
+
+                product.save(
+                    update_fields=['stock']
+                )
 
             session_key = request.headers.get(
                 'X-Session-Key'
             )
 
             if session_key:
+
                 Cart.objects.filter(
                     session_key=session_key
                 ).delete()
 
             try:
-                sync_order_to_mongo(order)
+
+                sync_order_to_mongo(
+                    order
+                )
+
             except Exception as e:
+
                 print(
                     f"[MongoDB COD Sync Warning] {e}"
                 )
 
             return Response(
                 {
-                    'status': 'COD Order Confirmed',
+                    'status':
+                        'COD Order Confirmed',
+
                     'message':
                         'Cash on Delivery order placed successfully.',
-                    'order_id': str(order.id),
-                    'payment_method': 'COD',
+
+                    'order_id':
+                        str(order.id),
+
+                    'payment_method':
+                        'COD',
+
                     'payment_status':
                         str(order.payment_status),
+
                     'order_status':
                         str(order.order_status),
+
                     'total_amount':
                         float(order.total_amount),
-                    'full_name': order.full_name,
-                    'email': order.email,
-                    'phone': order.phone,
+
+                    'full_name':
+                        order.full_name,
+
+                    'email':
+                        order.email,
+
+                    'phone':
+                        order.phone,
+
                     'shipping_address':
                         order.shipping_address,
-                    'city': order.city,
-                    'state': order.state,
+
+                    'city':
+                        order.city,
+
+                    'state':
+                        order.state,
+
                     'postal_code':
                         order.postal_code
                 },
@@ -1137,6 +1252,7 @@ class CreateCODOrderView(views.APIView):
             )
 
         except Exception as e:
+
             print(
                 f"[COD Order Creation Error] {e}"
             )
@@ -1148,8 +1264,6 @@ class CreateCODOrderView(views.APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-
 
 
 # =========================================================
@@ -1319,20 +1433,12 @@ class VerifyPaymentView(views.APIView):
 
         except Exception as e:
 
-            # Do not make a successful payment
-            # look like a failed payment just
-            # because MongoDB sync failed.
-
             print(
                 f"[MongoDB Sync Warning] {e}"
             )
 
         # -------------------------------------------------
         # PAYMENT SUCCESS RESPONSE
-        #
-        # IMPORTANT:
-        # Do NOT serialize the entire Order object here.
-        # Mongo/ObjectId based IDs can cause a 500.
         # -------------------------------------------------
 
         return Response(
@@ -1571,49 +1677,3 @@ class AdminStatsView(views.APIView):
                     list(low_stock)
             }
         )
-    # =========================================================
-# ONE-TIME PRODUCT IMAGE UPDATE
-# =========================================================
-
-class UpdateProductImagesView(views.APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        key = request.query_params.get("key")
-
-        if key != os.environ.get("SEED_PRODUCTS_KEY", "fimiku-update-2026"):
-            return Response(
-                {"error": "Invalid key"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        base = "https://www.fimiku.com/products/"
-
-        updates = {
-            "SILICONE BABY FEEDING SET":
-                base + "04_silicone_baby_feeding_set/image17.jpeg",
-
-            "SILICONE KITCHEN MAT":
-                base + "03_silicone_kitchen_mat/image12.png",
-
-            "3 in 1 Pet slow feeder bowl":
-                base + "02_pet_slow_feeder_bowl_3in1/image5.png",
-        }
-
-        updated = []
-
-        for name, image in updates.items():
-            products = Product.objects.filter(name=name)
-
-            for product in products:
-                product.image_url = image
-                product.save()
-                updated.append({
-                    "name": product.name,
-                    "image_url": product.image_url
-                })
-
-        return Response({
-            "status": "success",
-            "updated": updated
-        })
