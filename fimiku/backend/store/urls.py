@@ -1,10 +1,24 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
+
 from .views import (
-    RegisterView, CustomTokenObtainPairView, MeView, CategoryListView, ProductListView,
-    ProductDetailView, CartView, WishlistView, CouponValidateView,
-    CreateRazorpayOrderView, VerifyPaymentView, OrderListView,
-    OrderDetailView, ReviewCreateView, AIAssistantView, AdminStatsView
+    RegisterView,
+    CustomTokenObtainPairView,
+    MeView,
+    CategoryListView,
+    ProductListView,
+    ProductDetailView,
+    CartView,
+    WishlistView,
+    CouponValidateView,
+    CreateRazorpayOrderView,
+    CreateCODOrderView,
+    VerifyPaymentView,
+    OrderListView,
+    OrderDetailView,
+    ReviewCreateView,
+    AIAssistantView,
+    AdminStatsView,
 )
 
 urlpatterns = [
@@ -25,8 +39,24 @@ urlpatterns = [
     path('coupons/validate/', CouponValidateView.as_view(), name='coupon_validate'),
 
     # Orders & Payments
-    path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_order'),
-    path('payment/verify/', VerifyPaymentView.as_view(), name='verify_payment'),
+    path(
+        'payment/create-order/',
+        CreateRazorpayOrderView.as_view(),
+        name='create_order'
+    ),
+
+    path(
+        'payment/create-cod-order/',
+        CreateCODOrderView.as_view(),
+        name='create_cod_order'
+    ),
+
+    path(
+        'payment/verify/',
+        VerifyPaymentView.as_view(),
+        name='verify_payment'
+    ),
+
     path('orders/', OrderListView.as_view(), name='orders_list'),
     path('orders/<str:id>/', OrderDetailView.as_view(), name='order_detail'),
 

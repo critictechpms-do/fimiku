@@ -1,0 +1,289 @@
+warning: in the working copy of 'fimiku/backend/store/urls.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'fimiku/backend/store/views.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/fimiku/backend/store/urls.py b/fimiku/backend/store/urls.py[m
+[1mindex 9065d5f..63ca9a8 100644[m
+[1m--- a/fimiku/backend/store/urls.py[m
+[1m+++ b/fimiku/backend/store/urls.py[m
+[36m@@ -1,10 +1,24 @@[m
+ from django.urls import path[m
+ from rest_framework_simplejwt.views import TokenRefreshView[m
+[32m+[m
+ from .views import ([m
+[31m-    RegisterView, CustomTokenObtainPairView, MeView, CategoryListView, ProductListView,[m
+[31m-    ProductDetailView, CartView, WishlistView, CouponValidateView,[m
+[31m-    CreateRazorpayOrderView, VerifyPaymentView, OrderListView,[m
+[31m-    OrderDetailView, ReviewCreateView, AIAssistantView, AdminStatsView[m
+[32m+[m[32m    RegisterView,[m
+[32m+[m[32m    CustomTokenObtainPairView,[m
+[32m+[m[32m    MeView,[m
+[32m+[m[32m    CategoryListView,[m
+[32m+[m[32m    ProductListView,[m
+[32m+[m[32m    ProductDetailView,[m
+[32m+[m[32m    CartView,[m
+[32m+[m[32m    WishlistView,[m
+[32m+[m[32m    CouponValidateView,[m
+[32m+[m[32m    CreateRazorpayOrderView,[m
+[32m+[m[32m    CreateCODOrderView,[m
+[32m+[m[32m    VerifyPaymentView,[m
+[32m+[m[32m    OrderListView,[m
+[32m+[m[32m    OrderDetailView,[m
+[32m+[m[32m    ReviewCreateView,[m
+[32m+[m[32m    AIAssistantView,[m
+[32m+[m[32m    AdminStatsView,[m
+ )[m
+ [m
+ urlpatterns = [[m
+[36m@@ -25,8 +39,24 @@[m [murlpatterns = [[m
+     path('coupons/validate/', CouponValidateView.as_view(), name='coupon_validate'),[m
+ [m
+     # Orders & Payments[m
+[31m-    path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_order'),[m
+[31m-    path('payment/verify/', VerifyPaymentView.as_view(), name='verify_payment'),[m
+[32m+[m[32m    path([m
+[32m+[m[32m        'payment/create-order/',[m
+[32m+[m[32m        CreateRazorpayOrderView.as_view(),[m
+[32m+[m[32m        name='create_order'[m
+[32m+[m[32m    ),[m
+[32m+[m
+[32m+[m[32m    path([m
+[32m+[m[32m        'payment/create-cod-order/',[m
+[32m+[m[32m        CreateCODOrderView.as_view(),[m
+[32m+[m[32m        name='create_cod_order'[m
+[32m+[m[32m    ),[m
+[32m+[m
+[32m+[m[32m    path([m
+[32m+[m[32m        'payment/verify/',[m
+[32m+[m[32m        VerifyPaymentView.as_view(),[m
+[32m+[m[32m        name='verify_payment'[m
+[32m+[m[32m    ),[m
+[32m+[m
+     path('orders/', OrderListView.as_view(), name='orders_list'),[m
+     path('orders/<str:id>/', OrderDetailView.as_view(), name='order_detail'),[m
+ [m
+[36m@@ -36,4 +66,4 @@[m [murlpatterns = [[m
+ [m
+     # Admin Stats[m
+     path('admin-stats/', AdminStatsView.as_view(), name='admin_stats'),[m
+[31m-][m
+[32m+[m[32m][m
+\ No newline at end of file[m
+[1mdiff --git a/fimiku/backend/store/views.py b/fimiku/backend/store/views.py[m
+[1mindex 2bc422f..8c5c855 100644[m
+[1m--- a/fimiku/backend/store/views.py[m
+[1m+++ b/fimiku/backend/store/views.py[m
+[36m@@ -943,6 +943,215 @@[m [mclass CreateRazorpayOrderView(views.APIView):[m
+             )[m
+ [m
+ [m
+[32m+[m
+[32m+[m[32m# =========================================================[m
+[32m+[m[32m# CASH ON DELIVERY[m
+[32m+[m[32m# =========================================================[m
+[32m+[m
+[32m+[m[32mclass CreateCODOrderView(views.APIView):[m
+[32m+[m[32m    """Create and confirm a Cash-on-Delivery order."""[m
+[32m+[m
+[32m+[m[32m    permission_classes = [permissions.AllowAny][m
+[32m+[m
+[32m+[m[32m    def post(self, request):[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            data = request.data[m
+[32m+[m[32m            items_data = data.get('items', [])[m
+[32m+[m
+[32m+[m[32m            if not items_data:[m
+[32m+[m[32m                return Response([m
+[32m+[m[32m                    {'error': 'No items selected for order.'},[m
+[32m+[m[32m                    status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m            validated_items = [][m
+[32m+[m[32m            subtotal = Decimal('0')[m
+[32m+[m
+[32m+[m[32m            for item in items_data:[m
+[32m+[m[32m                product_id = item.get('product_id')[m
+[32m+[m
+[32m+[m[32m                try:[m
+[32m+[m[32m                    quantity = int(item.get('quantity', 1))[m
+[32m+[m[32m                except (TypeError, ValueError):[m
+[32m+[m[32m                    return Response([m
+[32m+[m[32m                        {'error': 'Invalid product quantity.'},[m
+[32m+[m[32m                        status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                    )[m
+[32m+[m
+[32m+[m[32m                if not product_id:[m
+[32m+[m[32m                    return Response([m
+[32m+[m[32m                        {'error': 'Product ID is missing.'},[m
+[32m+[m[32m                        status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                    )[m
+[32m+[m
+[32m+[m[32m                if quantity < 1:[m
+[32m+[m[32m                    return Response([m
+[32m+[m[32m                        {'error': 'Quantity must be at least 1.'},[m
+[32m+[m[32m                        status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                    )[m
+[32m+[m
+[32m+[m[32m                product = Product.objects.filter([m
+[32m+[m[32m                    id=product_id,[m
+[32m+[m[32m                    is_active=True[m
+[32m+[m[32m                ).first()[m
+[32m+[m
+[32m+[m[32m                if not product:[m
+[32m+[m[32m                    return Response([m
+[32m+[m[32m                        {[m
+[32m+[m[32m                            'error':[m
+[32m+[m[32m                                f"Product '{product_id}' was not found."[m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                    )[m
+[32m+[m
+[32m+[m[32m                if product.stock < quantity:[m
+[32m+[m[32m                    return Response([m
+[32m+[m[32m                        {[m
+[32m+[m[32m                            'error':[m
+[32m+[m[32m                                f"Only {product.stock} units of "[m
+[32m+[m[32m                                f"'{product.name}' are available."[m
+[32m+[m[32m                        },[m
+[32m+[m[32m                        status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m                    )[m
+[32m+[m
+[32m+[m[32m                discount_price = getattr([m
+[32m+[m[32m                    product, 'discount_price', None[m
+[32m+[m[32m                )[m
+[32m+[m[32m                normal_price = getattr([m
+[32m+[m[32m                    product, 'price', 0[m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m                unit_price = ([m
+[32m+[m[32m                    Decimal(str(discount_price))[m
+[32m+[m[32m                    if discount_price is not None[m
+[32m+[m[32m                    else Decimal(str(normal_price))[m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m                subtotal += unit_price * quantity[m
+[32m+[m
+[32m+[m[32m                validated_items.append({[m
+[32m+[m[32m                    'product': product,[m
+[32m+[m[32m                    'quantity': quantity,[m
+[32m+[m[32m                    'price': unit_price[m
+[32m+[m[32m                })[m
+[32m+[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                discount = Decimal([m
+[32m+[m[32m                    str(data.get('discount_amount', 0))[m
+[32m+[m[32m                )[m
+[32m+[m[32m            except Exception:[m
+[32m+[m[32m                discount = Decimal('0')[m
+[32m+[m
+[32m+[m[32m            discount = max(Decimal('0'), discount)[m
+[32m+[m[32m            discount = min(discount, subtotal)[m
+[32m+[m[32m            total = subtotal - discount[m
+[32m+[m
+[32m+[m[32m            order = Order.objects.create([m
+[32m+[m[32m                full_name=data.get([m
+[32m+[m[32m                    'full_name', 'Guest Parent'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                email=data.get([m
+[32m+[m[32m                    'email', 'guest@fimiku.com'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                phone=data.get([m
+[32m+[m[32m                    'phone', '9876543210'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                shipping_address=data.get([m
+[32m+[m[32m                    'shipping_address', 'Address'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                city=data.get([m
+[32m+[m[32m                    'city', 'City'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                postal_code=data.get([m
+[32m+[m[32m                    'postal_code', '000000'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                state=data.get([m
+[32m+[m[32m                    'state', 'State'[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                total_amount=total,[m
+[32m+[m[32m                discount_amount=discount,[m
+[32m+[m[32m                razorpay_order_id=([m
+[32m+[m[32m                    f"cod_{uuid.uuid4().hex[:16]}"[m
+[32m+[m[32m                ),[m
+[32m+[m[32m                payment_status='COD',[m
+[32m+[m[32m                order_status='PROCESSING'[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m            for item in validated_items:[m
+[32m+[m[32m                OrderItem.objects.create([m
+[32m+[m[32m                    order=order,[m
+[32m+[m[32m                    product=item['product'],[m
+[32m+[m[32m                    product_name=item['product'].name,[m
+[32m+[m[32m                    price=item['price'],[m
+[32m+[m[32m                    quantity=item['quantity'][m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m            for item in validated_items:[m
+[32m+[m[32m                product = item['product'][m
+[32m+[m[32m                product.stock = max([m
+[32m+[m[32m                    0,[m
+[32m+[m[32m                    product.stock - item['quantity'][m
+[32m+[m[32m                )[m
+[32m+[m[32m                product.save(update_fields=['stock'])[m
+[32m+[m
+[32m+[m[32m            session_key = request.headers.get([m
+[32m+[m[32m                'X-Session-Key'[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m            if session_key:[m
+[32m+[m[32m                Cart.objects.filter([m
+[32m+[m[32m                    session_key=session_key[m
+[32m+[m[32m                ).delete()[m
+[32m+[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                sync_order_to_mongo(order)[m
+[32m+[m[32m            except Exception as e:[m
+[32m+[m[32m                print([m
+[32m+[m[32m                    f"[MongoDB COD Sync Warning] {e}"[m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m            return Response([m
+[32m+[m[32m                {[m
+[32m+[m[32m                    'status': 'COD Order Confirmed',[m
+[32m+[m[32m                    'message':[m
+[32m+[m[32m                        'Cash on Delivery order placed successfully.',[m
+[32m+[m[32m                    'order_id': str(order.id),[m
+[32m+[m[32m                    'payment_method': 'COD',[m
+[32m+[m[32m                    'payment_status':[m
+[32m+[m[32m                        str(order.payment_status),[m
+[32m+[m[32m                    'order_status':[m
+[32m+[m[32m                        str(order.order_status),[m
+[32m+[m[32m                    'total_amount':[m
+[32m+[m[32m                        float(order.total_amount),[m
+[32m+[m[32m                    'full_name': order.full_name,[m
+[32m+[m[32m                    'email': order.email,[m
+[32m+[m[32m                    'phone': order.phone,[m
+[32m+[m[32m                    'shipping_address':[m
+[32m+[m[32m                        order.shipping_address,[m
+[32m+[m[32m                    'city': order.city,[m
+[32m+[m[32m                    'state': order.state,[m
+[32m+[m[32m                    'postal_code':[m
+[32m+[m[32m                        order.postal_code[m
+[32m+[m[32m                },[m
+[32m+[m[32m                status=status.HTTP_201_CREATED[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        except Exception as e:[m
+[32m+[m[32m            print([m
+[32m+[m[32m                f"[COD Order Creation Error] {e}"[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m            return Response([m
+[32m+[m[32m                {[m
+[32m+[m[32m                    'error':[m
+[32m+[m[32m                        f'COD order creation failed: {str(e)}'[m
+[32m+[m[32m                },[m
+[32m+[m[32m                status=status.HTTP_400_BAD_REQUEST[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+ # =========================================================[m
+ # VERIFY PAYMENT[m
+ # =========================================================[m
