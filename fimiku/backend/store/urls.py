@@ -66,4 +66,10 @@ urlpatterns = [
 
     # Admin Stats
     path('admin-stats/', AdminStatsView.as_view(), name='admin_stats'),
+    path('update-product-images/', UpdateProductImagesView.as_view(), name='update_product_images'),
+    path(
+    'update-product-images/',
+    views.UpdateProductImagesView.as_view(),
+    name='update_product_images'
+),
 ]

@@ -1571,3 +1571,49 @@ class AdminStatsView(views.APIView):
                     list(low_stock)
             }
         )
+    # =========================================================
+# ONE-TIME PRODUCT IMAGE UPDATE
+# =========================================================
+
+class UpdateProductImagesView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        key = request.query_params.get("key")
+
+        if key != os.environ.get("SEED_PRODUCTS_KEY", "fimiku-update-2026"):
+            return Response(
+                {"error": "Invalid key"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        base = "https://www.fimiku.com/products/"
+
+        updates = {
+            "SILICONE BABY FEEDING SET":
+                base + "04_silicone_baby_feeding_set/image17.jpeg",
+
+            "SILICONE KITCHEN MAT":
+                base + "03_silicone_kitchen_mat/image12.png",
+
+            "3 in 1 Pet slow feeder bowl":
+                base + "02_pet_slow_feeder_bowl_3in1/image5.png",
+        }
+
+        updated = []
+
+        for name, image in updates.items():
+            products = Product.objects.filter(name=name)
+
+            for product in products:
+                product.image_url = image
+                product.save()
+                updated.append({
+                    "name": product.name,
+                    "image_url": product.image_url
+                })
+
+        return Response({
+            "status": "success",
+            "updated": updated
+        })
