@@ -8,59 +8,84 @@ from store.models import Category, Product, Coupon
 
 
 def seed_database():
-    print("[Seeding] Seeding Fimiku baby catalog...")
+    print("[Seeding] Seeding/updating Fimiku baby catalog...")
 
-    # Categories
-    cat_teethers = Category.objects.create(
-        name="Teething Toys",
+    # =========================================================
+    # CATEGORIES
+    # =========================================================
+
+    cat_teethers, _ = Category.objects.get_or_create(
         slug="teethers",
-        description="Textured, pure food-grade silicone teethers to gently calm tender gums.",
-        image_url="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Teething Toys",
+            "description": "Textured, pure food-grade silicone teethers to gently calm tender gums.",
+            "image_url": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_bath = Category.objects.create(
-        name="Bath Toys",
+    cat_bath, _ = Category.objects.get_or_create(
         slug="bath",
-        description="Mold-free silicone bath animals, boats, and floating shapes.",
-        image_url="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Bath Toys",
+            "description": "Mold-free silicone bath animals, boats, and floating shapes.",
+            "image_url": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_feeding = Category.objects.create(
-        name="Feeding Accessories",
+    cat_feeding, _ = Category.objects.get_or_create(
         slug="feeding",
-        description="Ergonomic silicone suction plates, bowls, soft-tip spoons, and slow feeders.",
-        image_url="https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Feeding Accessories",
+            "description": "Ergonomic silicone suction plates, bowls, soft-tip spoons, and slow feeders.",
+            "image_url": "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_sensory = Category.objects.create(
-        name="Sensory Play",
+    cat_sensory, _ = Category.objects.get_or_create(
         slug="sensory",
-        description="Tactile geometric blocks, rainbow stackers, and sensory learning sets.",
-        image_url="https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Sensory Play",
+            "description": "Tactile geometric blocks, rainbow stackers, and sensory learning sets.",
+            "image_url": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_babyplay = Category.objects.create(
-        name="Baby Play",
+    cat_babyplay, _ = Category.objects.get_or_create(
         slug="baby-play",
-        description="Soft, safe silicone exploration toys for infants and toddlers.",
-        image_url="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Baby Play",
+            "description": "Soft, safe silicone exploration toys for infants and toddlers.",
+            "image_url": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_pets = Category.objects.create(
-        name="Pet Toys",
+    cat_pets, _ = Category.objects.get_or_create(
         slug="pets",
-        description="Durable, safe silicone chew toys and slow feeder accessories.",
-        image_url="https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Pet Toys",
+            "description": "Durable, safe silicone chew toys and slow feeder accessories.",
+            "image_url": "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
+        }
     )
 
-    cat_kitchen = Category.objects.create(
-        name="Kitchen Silicone",
+    cat_kitchen, _ = Category.objects.get_or_create(
         slug="kitchen",
-        description="Multi-purpose heat-resistant silicone mats, utensils, and organizers.",
-        image_url="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
+        defaults={
+            "name": "Kitchen Silicone",
+            "description": "Multi-purpose heat-resistant silicone mats, utensils, and organizers.",
+            "image_url": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
+        }
     )
+
+    # =========================================================
+    # PRODUCTS
+    # =========================================================
 
     products_data = [
+
+        # -----------------------------------------------------
+        # PET SLOW FEEDER
+        # -----------------------------------------------------
         {
             "category": cat_feeding,
             "name": "3 in 1 Pet slow feeder bowl",
@@ -78,9 +103,21 @@ def seed_database():
             "discount_price": 711.02,
             "stock": 80,
             "sku": "FIM-FEE-PET-01",
-            "image_url": "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=800",
+            "image_url": "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image5.png",
+            "additional_images": [
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image6.png",
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image7.png",
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image8.png",
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image9.png",
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image10.png",
+                "https://www.fimiku.com/products/02_pet_slow_feeder_bowl_3in1/image11.png"
+            ],
             "is_featured": True
         },
+
+        # -----------------------------------------------------
+        # KITCHEN MAT
+        # -----------------------------------------------------
         {
             "category": cat_kitchen,
             "name": "SILICONE KITCHEN MAT",
@@ -98,9 +135,19 @@ def seed_database():
             "discount_price": 772.38,
             "stock": 65,
             "sku": "FIM-KIT-01",
-            "image_url": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=800",
+            "image_url": "https://www.fimiku.com/products/03_silicone_kitchen_mat/image12.png",
+            "additional_images": [
+                "https://www.fimiku.com/products/03_silicone_kitchen_mat/image13.png",
+                "https://www.fimiku.com/products/03_silicone_kitchen_mat/image14.png",
+                "https://www.fimiku.com/products/03_silicone_kitchen_mat/image15.png",
+                "https://www.fimiku.com/products/03_silicone_kitchen_mat/image16.png"
+            ],
             "is_featured": True
         },
+
+        # -----------------------------------------------------
+        # BABY FEEDING SET
+        # -----------------------------------------------------
         {
             "category": cat_feeding,
             "name": "SILICONE BABY FEEDING SET",
@@ -118,9 +165,62 @@ def seed_database():
             "discount_price": 861.50,
             "stock": 90,
             "sku": "FIM-FEE-SET-01",
-            "image_url": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=800",
+            "image_url": "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image17.jpeg",
+            "additional_images": [
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image18.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image19.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image20.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image21.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image22.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image23.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image24.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image25.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image26.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image27.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image28.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image29.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image30.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image31.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image32.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image33.jpeg",
+                "https://www.fimiku.com/products/04_silicone_baby_feeding_set/image34.jpeg"
+            ],
             "is_featured": True
         },
+
+        # -----------------------------------------------------
+        # FOLDABLE BASKET - NEW PRODUCT
+        # -----------------------------------------------------
+        {
+            "category": cat_kitchen,
+            "name": "SILICON FOLDABLE BASKET",
+            "slug": "silicon-foldable-basket",
+            "description": "Easily foldable- occupy less storage space, 24L capacity, high durability.",
+            "features": [
+                "Easily foldable",
+                "Occupies less storage space",
+                "24L capacity",
+                "High durability",
+                "Colour available: Pink"
+            ],
+            "material": "Silicone",
+            "target_age": "All Ages",
+            "price": 1089.34,
+            "discount_price": None,
+            "stock": 10,
+            "sku": "FIM-BASKET-01",
+            "image_url": "https://www.fimiku.com/products/01_silicone_foldable_basket/image1.png",
+            "additional_images": [
+                "https://www.fimiku.com/products/01_silicone_foldable_basket/image2.png",
+                "https://www.fimiku.com/products/01_silicone_foldable_basket/image3.png",
+                "https://www.fimiku.com/products/01_silicone_foldable_basket/image4.png"
+            ],
+            "is_featured": True
+        },
+
+        # -----------------------------------------------------
+        # FOLDABLE TUB
+        # -----------------------------------------------------
         {
             "category": cat_bath,
             "name": "SILICONE FOLDABLE TUB",
@@ -141,6 +241,10 @@ def seed_database():
             "image_url": "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=800",
             "is_featured": True
         },
+
+        # -----------------------------------------------------
+        # TEETHING RING
+        # -----------------------------------------------------
         {
             "category": cat_teethers,
             "name": "Fimiku Koala Grip Textured Teething Ring",
@@ -161,6 +265,10 @@ def seed_database():
             "image_url": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=800",
             "is_featured": True
         },
+
+        # -----------------------------------------------------
+        # STACKING TOWER
+        # -----------------------------------------------------
         {
             "category": cat_sensory,
             "name": "Pastel Geometric Silicone Stacking Tower",
@@ -183,27 +291,83 @@ def seed_database():
         }
     ]
 
+    # =========================================================
+    # CREATE OR UPDATE PRODUCTS
+    # =========================================================
+
+    created_count = 0
+    updated_count = 0
+
     for p_data in products_data:
-        Product.objects.create(**p_data)
 
-    # Demo Coupons
-    Coupon.objects.create(
-        code="FIMIKU10",
-        discount_type="PERCENTAGE",
-        value=10.00,
-        min_order_amount=200.00,
-        is_active=True
-    )
+        sku = p_data["sku"]
 
-    Coupon.objects.create(
-        code="WELCOME50",
-        discount_type="FIXED",
-        value=50.00,
-        min_order_amount=300.00,
-        is_active=True
-    )
+        existing_product = Product.objects.filter(sku=sku).first()
 
-    print("[Success] Fimiku database seeded successfully!")
+        if existing_product:
+            for field, value in p_data.items():
+                setattr(existing_product, field, value)
+
+            existing_product.save()
+
+            updated_count += 1
+
+            print(
+                f"[Updated] {p_data['name']} | SKU: {sku}"
+            )
+
+        else:
+            Product.objects.create(**p_data)
+
+            created_count += 1
+
+            print(
+                f"[Created] {p_data['name']} | SKU: {sku}"
+            )
+
+    # =========================================================
+    # COUPONS - CREATE ONLY IF THEY DON'T EXIST
+    # =========================================================
+
+    coupon_1 = Coupon.objects.filter(code="FIMIKU10").first()
+
+    if coupon_1:
+        print("[Exists] Coupon FIMIKU10")
+    else:
+        Coupon.objects.create(
+            code="FIMIKU10",
+            discount_type="PERCENTAGE",
+            value=10.00,
+            min_order_amount=200.00,
+            is_active=True
+        )
+        print("[Created] Coupon FIMIKU10")
+
+    coupon_2 = Coupon.objects.filter(code="WELCOME50").first()
+
+    if coupon_2:
+        print("[Exists] Coupon WELCOME50")
+    else:
+        Coupon.objects.create(
+            code="WELCOME50",
+            discount_type="FIXED",
+            value=50.00,
+            min_order_amount=300.00,
+            is_active=True
+        )
+        print("[Created] Coupon WELCOME50")
+
+    # =========================================================
+    # COMPLETE
+    # =========================================================
+
+    print("")
+    print("==============================================")
+    print("[Success] Fimiku database seeded/updated!")
+    print(f"[Created Products] {created_count}")
+    print(f"[Updated Products] {updated_count}")
+    print("No duplicate products were created.")
+    print("==============================================")
 
 
 if __name__ == '__main__':
