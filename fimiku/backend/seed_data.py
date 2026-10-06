@@ -12,19 +12,11 @@ from store.models import Category, Product, Coupon
 # =========================================================
 
 def get_category(slug, name, description, image_url):
-    """
-    Get the first existing category with this slug.
-    If none exists, create one.
-
-    This intentionally uses filter().first()
-    because the existing database contains duplicate
-    categories with the same slug.
-    """
 
     category = Category.objects.filter(slug=slug).first()
 
     if category:
-        print(f"[Category Exists] {name} | {slug}")
+        print(f"[Category Exists] {name}")
         return category
 
     category = Category.objects.create(
@@ -34,7 +26,7 @@ def get_category(slug, name, description, image_url):
         image_url=image_url
     )
 
-    print(f"[Category Created] {name} | {slug}")
+    print(f"[Category Created] {name}")
 
     return category
 
@@ -44,17 +36,6 @@ def get_category(slug, name, description, image_url):
 # =========================================================
 
 def create_or_update_product(product_data):
-    """
-    Find a product by SKU.
-
-    Existing product:
-        Update it.
-
-    Missing product:
-        Create it.
-
-    This prevents duplicate products.
-    """
 
     sku = product_data["sku"]
 
@@ -67,23 +48,15 @@ def create_or_update_product(product_data):
 
         product.save()
 
-        print(
-            f"[Product Updated] "
-            f"{product.name} | SKU: {sku}"
-        )
+        print(f"[Product Updated] {product.name} | {sku}")
 
         return "updated"
 
-    else:
+    Product.objects.create(**product_data)
 
-        product = Product.objects.create(**product_data)
+    print(f"[Product Created] {product_data['name']} | {sku}")
 
-        print(
-            f"[Product Created] "
-            f"{product.name} | SKU: {sku}"
-        )
-
-        return "created"
+    return "created"
 
 
 # =========================================================
@@ -115,14 +88,14 @@ def create_coupon_if_missing(
 
 
 # =========================================================
-# MAIN SEED FUNCTION
+# MAIN
 # =========================================================
 
 def seed_database():
 
     print("")
     print("================================================")
-    print("[Seeding] Starting Fimiku database update...")
+    print("[FIMIKU] Updating database")
     print("================================================")
     print("")
 
@@ -131,102 +104,59 @@ def seed_database():
     # =====================================================
 
     cat_teethers = get_category(
-        slug="teethers",
-        name="Teething Toys",
-        description=(
-            "Textured, pure food-grade silicone teethers "
-            "to gently calm tender gums."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1596461404969-9ae70f2830c1"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "teethers",
+        "Teething Toys",
+        "Textured, pure food-grade silicone teethers to gently calm tender gums.",
+        "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_bath = get_category(
-        slug="bath",
-        name="Bath Toys",
-        description=(
-            "Mold-free silicone bath animals, boats, "
-            "and floating shapes."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1515488042361-ee00e0ddd4e4"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "bath",
+        "Bath Toys",
+        "Mold-free silicone bath animals, boats, and floating shapes.",
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_feeding = get_category(
-        slug="feeding",
-        name="Feeding Accessories",
-        description=(
-            "Ergonomic silicone suction plates, bowls, "
-            "soft-tip spoons, and slow feeders."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1584839619925-3e41416f393f"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "feeding",
+        "Feeding Accessories",
+        "Ergonomic silicone suction plates, bowls, soft-tip spoons, and slow feeders.",
+        "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_sensory = get_category(
-        slug="sensory",
-        name="Sensory Play",
-        description=(
-            "Tactile geometric blocks, rainbow stackers, "
-            "and sensory learning sets."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1519689680058-324335c77eba"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "sensory",
+        "Sensory Play",
+        "Tactile geometric blocks, rainbow stackers, and sensory learning sets.",
+        "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_babyplay = get_category(
-        slug="baby-play",
-        name="Baby Play",
-        description=(
-            "Soft, safe silicone exploration toys "
-            "for infants and toddlers."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1596461404969-9ae70f2830c1"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "baby-play",
+        "Baby Play",
+        "Soft, safe silicone exploration toys for infants and toddlers.",
+        "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_pets = get_category(
-        slug="pets",
-        name="Pet Toys",
-        description=(
-            "Durable, safe silicone chew toys "
-            "and slow feeder accessories."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1584839619925-3e41416f393f"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "pets",
+        "Pet Toys",
+        "Durable, safe silicone chew toys and slow feeder accessories.",
+        "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600"
     )
 
     cat_kitchen = get_category(
-        slug="kitchen",
-        name="Kitchen Silicone",
-        description=(
-            "Multi-purpose heat-resistant silicone mats, "
-            "utensils, and organizers."
-        ),
-        image_url=(
-            "https://images.unsplash.com/"
-            "photo-1515488042361-ee00e0ddd4e4"
-            "?auto=format&fit=crop&q=80&w=600"
-        )
+        "kitchen",
+        "Kitchen Silicone",
+        "Multi-purpose heat-resistant silicone mats, utensils, and organizers.",
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600"
     )
+
+    # =====================================================
+    # PRODUCT IMAGE BASE URL
+    # =====================================================
+
+    BASE = "https://www.fimiku.com/products"
 
     # =====================================================
     # PRODUCTS
@@ -270,43 +200,16 @@ def seed_database():
 
             "sku": "FIM-FEE-PET-01",
 
-            "image_url": (
-                "https://www.fimiku.com/"
-                "products/02_pet_slow_feeder_bowl_3in1/"
-                "image5.png"
-            ),
+            "image_url":
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image11.jpeg",
 
             "additional_images": [
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image6.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image7.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image8.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image9.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image10.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/02_pet_slow_feeder_bowl_3in1/"
-                    "image11.png"
-                )
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image10.jpeg",
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image5.png",
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image6.png",
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image7.png",
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image8.jpeg",
+                f"{BASE}/02_pet_slow_feeder_bowl_3in1/image9.jpeg"
             ],
 
             "is_featured": True
@@ -348,33 +251,14 @@ def seed_database():
 
             "sku": "FIM-KIT-01",
 
-            "image_url": (
-                "https://www.fimiku.com/"
-                "products/03_silicone_kitchen_mat/"
-                "image12.png"
-            ),
+            "image_url":
+                f"{BASE}/03_silicone_kitchen_mat/image14.jpeg",
 
             "additional_images": [
-                (
-                    "https://www.fimiku.com/"
-                    "products/03_silicone_kitchen_mat/"
-                    "image13.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/03_silicone_kitchen_mat/"
-                    "image14.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/03_silicone_kitchen_mat/"
-                    "image15.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/03_silicone_kitchen_mat/"
-                    "image16.png"
-                )
+                f"{BASE}/03_silicone_kitchen_mat/image15.jpeg",
+                f"{BASE}/03_silicone_kitchen_mat/image16.jpeg",
+                f"{BASE}/03_silicone_kitchen_mat/image12.png",
+                f"{BASE}/03_silicone_kitchen_mat/image13.png"
             ],
 
             "is_featured": True
@@ -416,105 +300,34 @@ def seed_database():
 
             "sku": "FIM-FEE-SET-01",
 
-            "image_url": (
-                "https://www.fimiku.com/"
-                "products/04_silicone_baby_feeding_set/"
-                "image17.jpeg"
-            ),
+            "image_url":
+                f"{BASE}/04_silicone_baby_feeding_set/image19.png",
 
             "additional_images": [
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image18.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image19.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image20.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image21.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image22.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image23.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image24.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image25.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image26.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image27.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image28.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image29.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image30.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image31.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image32.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image33.jpeg"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/04_silicone_baby_feeding_set/"
-                    "image34.jpeg"
-                )
+                f"{BASE}/04_silicone_baby_feeding_set/image17.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image18.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image20.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image21.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image22.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image23.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image24.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image25.jpeg",
+                f"{BASE}/04_silicone_baby_feeding_set/image26.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image27.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image28.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image29.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image30.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image31.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image32.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image33.png",
+                f"{BASE}/04_silicone_baby_feeding_set/image34.png"
             ],
 
             "is_featured": True
         },
 
         # =================================================
-        # SILICON FOLDABLE BASKET
+        # FOLDABLE BASKET
         # =================================================
 
         {
@@ -549,28 +362,13 @@ def seed_database():
 
             "sku": "FIM-BASKET-01",
 
-            "image_url": (
-                "https://www.fimiku.com/"
-                "products/01_silicone_foldable_basket/"
-                "image1.png"
-            ),
+            "image_url":
+                f"{BASE}/01_silicone_foldable_basket/image3.jpeg",
 
             "additional_images": [
-                (
-                    "https://www.fimiku.com/"
-                    "products/01_silicone_foldable_basket/"
-                    "image2.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/01_silicone_foldable_basket/"
-                    "image3.png"
-                ),
-                (
-                    "https://www.fimiku.com/"
-                    "products/01_silicone_foldable_basket/"
-                    "image4.png"
-                )
+                f"{BASE}/01_silicone_foldable_basket/image1.png",
+                f"{BASE}/01_silicone_foldable_basket/image2.jpeg",
+                f"{BASE}/01_silicone_foldable_basket/image4.jpeg"
             ],
 
             "is_featured": True
@@ -612,11 +410,10 @@ def seed_database():
 
             "sku": "FIM-BAT-01",
 
-            "image_url": (
+            "image_url":
                 "https://images.unsplash.com/"
                 "photo-1519689680058-324335c77eba"
-                "?auto=format&fit=crop&q=80&w=800"
-            ),
+                "?auto=format&fit=crop&q=80&w=800",
 
             "is_featured": True
         },
@@ -645,10 +442,9 @@ def seed_database():
                 "Dishwasher & boil-safe"
             ],
 
-            "material": (
+            "material":
                 "100% Food-Grade Silicone "
-                "(BPA, PVC, Phthalate Free)"
-            ),
+                "(BPA, PVC, Phthalate Free)",
 
             "target_age": "0 - 12m",
 
@@ -660,11 +456,10 @@ def seed_database():
 
             "sku": "FIM-TEE-01",
 
-            "image_url": (
+            "image_url":
                 "https://images.unsplash.com/"
                 "photo-1596461404969-9ae70f2830c1"
-                "?auto=format&fit=crop&q=80&w=800"
-            ),
+                "?auto=format&fit=crop&q=80&w=800",
 
             "is_featured": True
         },
@@ -705,11 +500,10 @@ def seed_database():
 
             "sku": "FIM-SEN-01",
 
-            "image_url": (
+            "image_url":
                 "https://images.unsplash.com/"
                 "photo-1515488042361-ee00e0ddd4e4"
-                "?auto=format&fit=crop&q=80&w=800"
-            ),
+                "?auto=format&fit=crop&q=80&w=800",
 
             "is_featured": True
         }
@@ -747,17 +541,17 @@ def seed_database():
     print("------------------------------------------------")
 
     create_coupon_if_missing(
-        code="FIMIKU10",
-        discount_type="PERCENTAGE",
-        value=10.00,
-        min_order_amount=200.00
+        "FIMIKU10",
+        "PERCENTAGE",
+        10.00,
+        200.00
     )
 
     create_coupon_if_missing(
-        code="WELCOME50",
-        discount_type="FIXED",
-        value=50.00,
-        min_order_amount=300.00
+        "WELCOME50",
+        "FIXED",
+        50.00,
+        300.00
     )
 
     # =====================================================
@@ -770,15 +564,10 @@ def seed_database():
     print("================================================")
     print(f"Products created : {created_count}")
     print(f"Products updated : {updated_count}")
-    print("Existing duplicate categories were NOT created again.")
-    print("Existing duplicate products were NOT created again.")
+    print("No duplicate products were created.")
     print("================================================")
     print("")
 
-
-# =========================================================
-# RUN
-# =========================================================
 
 if __name__ == "__main__":
     seed_database()
