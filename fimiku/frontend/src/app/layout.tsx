@@ -30,15 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-gradient-to-b from-[#FAF5FE] via-[#FCF7FD] to-[#F6EFFD] text-fimiku-darkText min-h-screen flex flex-col antialiased relative selection:bg-fimiku-lightPurple/30">
-        {/* Background ambient pastel decorative glows */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl" />
-          <div className="absolute top-1/4 -right-32 w-96 h-96 bg-pink-200/35 rounded-full blur-3xl" />
-          <div className="absolute top-2/3 left-1/4 w-[500px] h-[500px] bg-purple-100/30 rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 right-1/4 w-96 h-96 bg-pink-100/40 rounded-full blur-3xl" />
-        </div>
-
+      <body className="bg-[#fdfcfe] text-fimiku-darkText min-h-screen flex flex-col antialiased relative selection:bg-fimiku-lightPurple/30">
         <AuthProvider>
           <CartProvider>
             <div className="relative z-10 flex flex-col min-h-screen">

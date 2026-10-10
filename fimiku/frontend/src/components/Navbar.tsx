@@ -1,12 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Sparkles, Heart, User, X, ShieldCheck, Search, Menu, LogOut, Package } from 'lucide-react';
+import {
+  Heart,
+  LogOut,
+  Menu,
+  Package,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  User,
+  X,
+} from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import AIAssistantModal from './AIAssistantModal';
 import AuthModal from './AuthModal';
+
+const categoryLinks = [
+  { label: 'All toys', href: '/shop' },
+  { label: 'Teething toys', href: '/shop?category=teethers' },
+  { label: 'Bath toys', href: '/shop?category=bath' },
+  { label: 'Feeding', href: '/shop?category=feeding' },
+  { label: 'Sensory play', href: '/shop?category=sensory' },
+  { label: 'Baby play', href: '/shop?category=baby-play' },
+  { label: 'Our story', href: '/about' },
+];
 
 export default function Navbar() {
   const { cart, wishlist } = useCart();
@@ -26,321 +46,86 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   };
 
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (query) {
+      window.location.href = `/shop?search=${encodeURIComponent(query)}`;
+    }
+  };
+
   return (
     <>
-      {/* Top Announcement Bar */}
-      <div className="bg-fimiku-deep text-white text-[11px] sm:text-xs py-2 px-4 text-center font-medium tracking-wide flex items-center justify-center gap-2">
-        <ShieldCheck className="w-3.5 h-3.5 text-fimiku-paleAqua hidden sm:inline" />
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-fimiku-light inline" />
-          100% Certified Food-Grade Platinum Silicone • Free Express Delivery Across India
-        </span>
-      </div>
-
-      {/* Main Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-fimiku-lightBorder transition-all shadow-sm">
-        <div className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 h-20 sm:h-24 flex items-center justify-between">
-          
-          {/* Left: Category / Mobile Menu Button & Desktop Links */}
-          <div className="flex items-center space-x-6">
+      <header className="sticky top-0 z-40 border-b border-[#eee8f3] bg-white/95 shadow-[0_3px_18px_rgba(50,36,69,.04)] backdrop-blur-md">
+        <div className="mx-auto grid h-[72px] max-w-[1320px] grid-cols-[1fr_auto] items-center gap-3 px-4 sm:h-[82px] sm:px-6 lg:grid-cols-[210px_minmax(280px,1fr)_210px] lg:px-8">
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2.5 rounded-2xl bg-fimiku-veryLightLavender text-fimiku-cta hover:bg-fimiku-lavenderCard transition flex items-center justify-center border border-fimiku-lightBorder"
-              aria-label="Toggle navigation menu"
-              title="Menu"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#51485d] hover:bg-[#f4eff9] lg:hidden"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-
-            {/* Desktop Navigation Links: Home, All Toys, About Us, Contact */}
-            <nav className="hidden lg:flex items-center space-x-8 text-sm font-semibold text-fimiku-darkText">
-              <Link href="/" className="hover:text-fimiku-primary transition py-1">
-                Home
-              </Link>
-              <Link href="/shop" className="hover:text-fimiku-primary transition py-1">
-                All Toys
-              </Link>
-              <Link href="/about" className="hover:text-fimiku-primary transition py-1">
-                About Us
-              </Link>
-              <Link href="/contact" className="hover:text-fimiku-primary transition py-1">
-                Contact
-              </Link>
-            </nav>
+            <Link href="/" className="flex min-w-0 items-center">
+              <img src="/logo-transparent.png" alt="Fimiku" className="h-11 w-auto object-contain sm:h-[52px]" />
+            </Link>
           </div>
 
-          {/* Center: Brand Logo */}
-          <Link href="/" className="flex items-center justify-center text-center group py-1">
-            <img
-              src="/logo-transparent.png"
-              alt="Fimiku - Gentle care for little beginnings"
-              className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-            />
-          </Link>
+          <form onSubmit={submitSearch} role="search" className="hidden h-11 items-center rounded-full border border-[#e9e2ef] bg-[#fbf9fc] px-4 transition focus-within:border-[#b49bce] focus-within:bg-white lg:flex">
+            <Search className="h-4 w-4 shrink-0 text-[#90869b]" />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} aria-label="Search products" placeholder="Search toys, teethers and more..." className="ml-3 min-w-0 flex-1 bg-transparent text-sm text-[#302b3d] outline-none placeholder:text-[#a19aaa]" />
+            <button type="submit" className="ml-2 text-xs font-semibold text-[#7955a7] hover:text-[#56377d]">Search</button>
+          </form>
 
-          {/* Right: Action Icons */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Ask AI Advisor Button */}
-            <button
-              onClick={() => setIsAiOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-fimiku-veryLightLavender hover:bg-fimiku-lavenderCard rounded-full text-xs font-semibold text-fimiku-cta border border-fimiku-lightPurple/40 transition shadow-sm"
-              title="Fimiku AI Advisor"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-fimiku-cta" />
-              <span className="hidden sm:inline">AI Advisor</span>
-            </button>
-
-            {/* Search Button */}
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 text-fimiku-darkText hover:text-fimiku-primary hover:bg-fimiku-veryLightLavender rounded-full transition"
-              title="Search Catalog"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-
-            {/* Wishlist Link */}
-            <Link
-              href="/wishlist"
-              className="relative p-2 text-fimiku-darkText hover:text-fimiku-primary hover:bg-fimiku-veryLightLavender rounded-full transition"
-              title="My Favourites"
-            >
-              <Heart className="w-5 h-5" />
-              {wishlist.length > 0 && (
-                <span className="absolute top-1 right-1 bg-fimiku-cta text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  {wishlist.length}
-                </span>
-              )}
+          <div className="flex items-center justify-end gap-1 sm:gap-2">
+            <button onClick={() => setSearchOpen(!searchOpen)} className="flex h-9 w-9 items-center justify-center rounded-full text-[#51485d] transition hover:bg-[#f4eff9] lg:hidden" aria-label="Search products" aria-expanded={searchOpen}><Search className="h-5 w-5" /></button>
+            <button onClick={() => setIsAiOpen(true)} className="hidden h-9 items-center gap-1.5 rounded-full bg-[#f4eff9] px-3 text-xs font-semibold text-[#7955a7] transition hover:bg-[#ebe2f5] sm:flex" title="Fimiku AI Advisor"><Sparkles className="h-4 w-4" /><span className="hidden xl:inline">AI Advisor</span></button>
+            <Link href="/wishlist" className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#51485d] transition hover:bg-[#f4eff9]" aria-label={`Wishlist, ${wishlist.length} items`}>
+              <Heart className="h-5 w-5" />
+              {wishlist.length > 0 && <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8c69bd] px-1 text-[9px] font-bold text-white">{wishlist.length}</span>}
             </Link>
-
-            {/* Shopping Cart Link */}
-            <Link
-              href="/cart"
-              className="relative p-2 text-fimiku-darkText hover:text-fimiku-primary hover:bg-fimiku-veryLightLavender rounded-full transition"
-              title="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cart.item_count > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-fimiku-cta text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm">
-                  {cart.item_count}
-                </span>
-              )}
-            </Link>
-
-            {/* User Account / Auth Dropdown */}
             <div className="relative">
-              <button
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    openAuth('login');
-                  } else {
-                    setAuthDropdown(!authDropdown);
-                  }
-                }}
-                className={`p-2 rounded-full transition flex items-center gap-1.5 ${
-                  isAuthenticated
-                    ? 'bg-fimiku-veryLightLavender text-fimiku-cta border border-fimiku-lightPurple/40'
-                    : 'text-fimiku-darkText hover:text-fimiku-primary hover:bg-fimiku-veryLightLavender'
-                }`}
-                title={isAuthenticated && user ? `Logged in as ${user.username}` : 'Sign In / Register'}
-              >
-                <User className="w-5 h-5" />
-                {isAuthenticated && user && (
-                  <span className="hidden md:inline text-xs font-bold max-w-[80px] truncate">
-                    {user.first_name || user.username}
-                  </span>
-                )}
+              <button onClick={() => isAuthenticated ? setAuthDropdown(!authDropdown) : openAuth('login')} className="flex h-9 w-9 items-center justify-center rounded-full text-[#51485d] transition hover:bg-[#f4eff9]" aria-label={isAuthenticated && user ? `Account for ${user.username}` : 'Sign in'}>
+                <User className="h-5 w-5" />
               </button>
-
-              {authDropdown && isAuthenticated && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-3xl shadow-floating border border-fimiku-lightBorder py-2 z-50 text-xs animate-fade-in">
-                  <div className="px-4 py-3 border-b border-fimiku-lightBorder bg-fimiku-softLavender/50">
-                    <p className="font-bold text-fimiku-darkText">{user?.username}</p>
-                    <p className="text-[11px] text-fimiku-grayText truncate">{user?.email}</p>
-                    <span className="inline-block mt-1 text-[10px] bg-fimiku-veryLightLavender text-fimiku-cta px-2 py-0.5 rounded-full font-semibold border border-fimiku-lightPurple/30">
-                      Verified Parent
-                    </span>
-                  </div>
-                  <div className="py-1">
-                    <Link
-                      href="/orders"
-                      onClick={() => setAuthDropdown(false)}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-fimiku-veryLightLavender text-fimiku-darkText font-medium"
-                    >
-                      <Package className="w-4 h-4 text-fimiku-cta" />
-                      <span>My Orders & Tracking</span>
-                    </Link>
-                    <Link
-                      href="/wishlist"
-                      onClick={() => setAuthDropdown(false)}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-fimiku-veryLightLavender text-fimiku-darkText font-medium"
-                    >
-                      <Heart className="w-4 h-4 text-fimiku-cta" />
-                      <span>My Favourites ({wishlist.length})</span>
-                    </Link>
-                    <Link
-                      href="/cart"
-                      onClick={() => setAuthDropdown(false)}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-fimiku-veryLightLavender text-fimiku-darkText font-medium"
-                    >
-                      <ShoppingBag className="w-4 h-4 text-fimiku-cta" />
-                      <span>Shopping Bag ({cart.item_count})</span>
-                    </Link>
-                    <Link
-                      href="/shop"
-                      onClick={() => setAuthDropdown(false)}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-fimiku-veryLightLavender text-fimiku-darkText font-medium"
-                    >
-                      <Package className="w-4 h-4 text-fimiku-cta" />
-                      <span>Explore Toys</span>
-                    </Link>
-                  </div>
-                  <div className="border-t border-fimiku-lightBorder pt-1 mt-1">
-                    <button
-                      onClick={() => {
-                        logout();
-                        setAuthDropdown(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-red-50 text-red-600 font-semibold"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+              {authDropdown && isAuthenticated && <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl border border-[#eee8f3] bg-white p-2 text-sm shadow-xl">
+                <div className="border-b border-[#f0edf2] px-3 py-2"><p className="font-semibold text-[#302b3d]">{user?.first_name || user?.username}</p><p className="truncate text-xs text-[#898391]">{user?.email}</p></div>
+                <Link href="/orders" onClick={() => setAuthDropdown(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-[#51485d] hover:bg-[#f8f5fc]"><Package className="h-4 w-4" />My orders</Link>
+                <Link href="/wishlist" onClick={() => setAuthDropdown(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-[#51485d] hover:bg-[#f8f5fc]"><Heart className="h-4 w-4" />My wishlist</Link>
+                <button onClick={() => { logout(); setAuthDropdown(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"><LogOut className="h-4 w-4" />Sign out</button>
+              </div>}
             </div>
+            <Link href="/cart" className="relative flex h-9 w-9 items-center justify-center rounded-full text-[#51485d] transition hover:bg-[#f4eff9]" aria-label={`Shopping bag, ${cart.item_count} items`}>
+              <ShoppingBag className="h-5 w-5" />
+              {cart.item_count > 0 && <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8c69bd] px-1 text-[9px] font-bold text-white">{cart.item_count}</span>}
+            </Link>
           </div>
         </div>
 
-        {/* Search Bar Overlay */}
-        {searchOpen && (
-          <div className="border-t border-fimiku-lightBorder bg-fimiku-softLavender px-4 py-3 animate-fade-in">
-            <div className="max-w-xl mx-auto flex items-center gap-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    window.location.href = `/shop?search=${encodeURIComponent(searchQuery)}`;
-                  }
-                }}
-                placeholder="Search teethers, bath toys, silicone sets..."
-                className="w-full px-4 py-2 bg-white rounded-full border border-fimiku-lightBorder text-xs text-fimiku-darkText focus:outline-none focus:border-fimiku-primary shadow-sm"
-                autoFocus
-              />
-              <Link
-                href={searchQuery.trim() ? `/shop?search=${encodeURIComponent(searchQuery)}` : '/shop'}
-                className="px-5 py-2 bg-fimiku-cta text-white text-xs font-semibold rounded-full hover:bg-fimiku-primary transition"
-                onClick={() => setSearchOpen(false)}
-              >
-                Search
-              </Link>
-            </div>
+        {searchOpen && <form onSubmit={submitSearch} role="search" className="flex gap-2 border-t border-[#f0edf2] bg-white px-4 py-3 lg:hidden">
+          <input autoFocus value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} aria-label="Search products" placeholder="Search toys, teethers and more..." className="min-w-0 flex-1 rounded-full border border-[#e9e2ef] bg-[#fbf9fc] px-4 py-2.5 text-sm outline-none focus:border-[#b49bce]" />
+          <button type="submit" className="rounded-full bg-[#8c69bd] px-4 text-xs font-semibold text-white">Search</button>
+        </form>}
+
+        <nav aria-label="Product categories" className="border-t border-[#f1ebf6] bg-[#f1eafa]">
+          <div className="mx-auto flex max-w-[1320px] items-center justify-start gap-1 overflow-x-auto px-4 py-2.5 no-scrollbar sm:justify-center sm:px-6 lg:px-8">
+            {categoryLinks.map((item) => <Link key={item.label} href={item.href} className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-[11px] font-semibold text-[#574b67] transition hover:bg-white/80 hover:text-[#7955a7] sm:px-4 sm:text-xs">{item.label}</Link>)}
           </div>
-        )}
+        </nav>
 
-        {/* Mobile Dropdown Navigation */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-b border-fimiku-lightBorder px-6 py-4 space-y-3 text-sm animate-fade-in">
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              href="/shop"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-            >
-              All Toys
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-            >
-              About Us
-            </Link>
-            <Link
-              href="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-            >
-              Contact
-            </Link>
-            
-            {/* Mobile Wishlist & Auth Links */}
-            <div className="pt-3 border-t border-fimiku-lightBorder space-y-2">
-              <Link
-                href="/orders"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-              >
-                <Package className="w-4 h-4 text-fimiku-cta" />
-                <span>My Orders</span>
-              </Link>
-
-              <Link
-                href="/wishlist"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between py-2 text-fimiku-darkText hover:text-fimiku-primary font-medium"
-              >
-                <span className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-fimiku-cta" />
-                  My Favourites
-                </span>
-                {wishlist.length > 0 && (
-                  <span className="bg-fimiku-cta text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {wishlist.length}
-                  </span>
-                )}
-              </Link>
-
-              {isAuthenticated && user ? (
-                <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 w-full py-2 text-red-600 font-medium"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out ({user.username})
-                </button>
-              ) : (
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => openAuth('login')}
-                    className="flex-1 py-2 bg-fimiku-cta text-white rounded-full text-xs font-semibold text-center hover:bg-fimiku-primary transition"
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => openAuth('register')}
-                    className="flex-1 py-2 bg-fimiku-veryLightLavender text-fimiku-cta border border-fimiku-lightPurple/40 rounded-full text-xs font-semibold text-center hover:bg-fimiku-lavenderCard transition"
-                  >
-                    Register
-                  </button>
-                </div>
-              )}
-            </div>
+        {mobileMenuOpen && <div className="border-t border-[#eee8f3] bg-white px-5 py-4 lg:hidden">
+          <div className="grid grid-cols-2 gap-2">{categoryLinks.map((item) => <Link key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="rounded-xl bg-[#faf8fc] px-3 py-2.5 text-sm font-medium text-[#51485d]">{item.label}</Link>)}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#f0edf2] pt-3">
+            <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-3 py-2 text-sm text-[#51485d]">My orders</Link>
+            {isAuthenticated ? <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="rounded-xl px-3 py-2 text-left text-sm text-red-600">Sign out</button> : <button onClick={() => openAuth('login')} className="rounded-xl px-3 py-2 text-left text-sm text-[#7955a7]">Sign in / Register</button>}
           </div>
-        )}
+        </div>}
       </header>
 
-      {/* Gemini AI Advisor Modal */}
       <AIAssistantModal isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
-
-      {/* Sign In & Register Modal */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        initialMode={authMode}
-      />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} initialMode={authMode} />
     </>
   );
 }

@@ -1,821 +1,299 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getProductImage } from '@/lib/productImages';
-import { 
-  ShieldCheck, 
-  Sparkles, 
-  RefreshCw, 
-  Feather, 
-  ArrowRight, 
-  Heart, 
-  Star, 
-  Check, 
-  X, 
-  ShoppingBag, 
-  Droplets, 
-  Flame, 
-  Smile, 
-  Shield, 
-  Leaf, 
-  Gift, 
-  ChevronDown, 
-  ChevronUp, 
-  Layers,
-  Award,
-  CheckCircle2,
-  AlertTriangle,
-  MessageSquareQuote,
-  Baby,
-  Truck,
-  Headphones
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  CircleHelp,
+  Droplets,
+  Heart,
+  Leaf,
+  Mail,
+  PackageCheck,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useCart, ProductType } from '@/context/CartContext';
+import { getProductImage } from '@/lib/productImages';
+import { ProductType, useCart } from '@/context/CartContext';
+
+const categories = [
+  { title: 'Teething Toys', href: '/shop?category=teethers', image: '/products/teething-ring-collection.webp', note: 'Gentle relief for little gums' },
+  { title: 'Bath Toys', href: '/shop?category=bath', image: '/products/bath-toy-collection.webp', note: 'Make a splash at bath time' },
+  { title: 'Feeding Accessories', href: '/shop?category=feeding', image: '/products/baby-feeding-set.webp', note: 'Little tools for big milestones' },
+  { title: 'Sensory Play', href: '/shop?category=sensory', image: '/products/sensory-stacking-toy-set.webp', note: 'Explore, stack and discover' },
+  { title: 'Baby Play', href: '/shop?category=baby-play', image: '/products/sensory-teether-collection.webp', note: 'Made for curious hands' },
+  { title: 'Pull Toys', href: '/shop?search=pull', image: 'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?auto=format&fit=crop&q=85&w=500', note: 'Little toys ready to roll' },
+  { title: 'Mealtime Essentials', href: '/shop?category=feeding', image: '/products/silicone-bib-bowl-set.webp', note: 'A softer start to solids' },
+];
+
+const ageGroups = [
+  { title: '0–12 Months', description: 'Soft first discoveries, soothing teethers and everyday essentials.', href: '/shop?category=teethers', image: '/products/teething-ring-collection.webp', tone: 'bg-[#f5f0ff]' },
+  { title: '1–3 Years', description: 'Independent little eaters and busy hands ready to explore.', href: '/shop?category=feeding', image: '/products/baby-feeding-set.webp', tone: 'bg-[#fff1f2]' },
+  { title: '3+ Years', description: 'Open-ended play for growing imaginations and big ideas.', href: '/shop?category=sensory', image: '/products/sensory-stacking-toy-set.webp', tone: 'bg-[#eff8f4]' },
+];
+
+const trustFeatures = [
+  { title: 'Verified Safety', text: 'Thoughtful materials for the things little ones love to explore.', icon: ShieldCheck },
+  { title: 'Silicone Focused', text: 'A considered collection centred on soft, food-grade silicone.', icon: Droplets },
+  { title: 'Eco-Friendly Choices', text: 'Durable everyday favourites designed to be used again and again.', icon: Leaf },
+  { title: 'Made for Everyday', text: 'Easy-care essentials that fit real family routines.', icon: PackageCheck },
+  { title: 'Thoughtfully Designed', text: 'Gentle textures, useful details and joyful colours.', icon: Sparkles },
+  { title: 'For Little Hands', text: 'Comfortable shapes made for small hands to hold and explore.', icon: Heart },
+];
+
+const faqItems = [
+  { question: 'What materials are Fimiku products made from?', answer: 'Product materials are listed on each item page. Our silicone collection is made with food-grade silicone; please check the individual product details for the material and care information.' },
+  { question: 'How should I clean silicone toys and feeding accessories?', answer: 'Wash with warm water and mild soap, then dry thoroughly. Always follow the care guidance included with the specific product.' },
+  { question: 'How do I choose a product for my child’s age?', answer: 'Use the age guidance shown on each product page and packaging. Adult supervision is recommended during play and mealtimes.' },
+  { question: 'Where can I find shipping information?', answer: 'Available delivery options and estimated timings are shown during checkout after you enter your delivery address.' },
+  { question: 'What is the returns policy?', answer: 'Please visit our About page or contact the Fimiku team for the current return and exchange policy before placing your order.' },
+];
+
+const sampleTestimonials = [
+  { quote: 'The colours are lovely and the details feel really considered. A sweet addition to our play shelf.', name: 'A happy Fimiku family' },
+  { quote: 'Easy to care for and just the kind of simple, useful design we look for in everyday essentials.', name: 'A Fimiku customer' },
+  { quote: 'A thoughtful little gift for a new arrival. The soft colours and playful shapes are beautiful.', name: 'A Fimiku gift-giver' },
+];
+
+function catalogProducts(data: unknown): ProductType[] {
+  const products = Array.isArray(data)
+    ? data
+    : data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)
+      ? data.results
+      : [];
+
+  const seenProducts = new Set<string>();
+
+  return (products as ProductType[])
+    .filter((product) => product.is_active !== false && product.is_in_stock !== false)
+    .filter((product) => {
+      const category = `${product.category_slug ?? ''} ${product.category_name ?? product.category?.name ?? ''}`.toLowerCase();
+      const productName = `${product.name} ${product.slug}`.toLowerCase();
+      return !category.includes('pet') && !category.includes('kitchen') && !productName.includes('pet');
+    })
+    .filter((product) => {
+      const key = (product.slug || String(product.id)).toLowerCase();
+      if (seenProducts.has(key)) {
+        return false;
+      }
+      seenProducts.add(key);
+      return true;
+    })
+    .slice(0, 6);
+}
 
 export default function HomePage() {
-  const [featuredProducts, setFeaturedProducts] = useState<ProductType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  const { addToCart, toggleWishlist, isInWishlist } = useCart();
+  const [email, setEmail] = useState('');
+  const [newsletterMessage, setNewsletterMessage] = useState('');
+  const [newsletterError, setNewsletterError] = useState(false);
+  const { addToCart } = useCart();
 
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const res = await api.get('/products/');
-        const data = res.data.results || res.data;
-        if (Array.isArray(data) && data.length > 0) {
-          setFeaturedProducts(data.slice(0, 4));
-        } else {
-          setFeaturedProducts(mockBestSellers);
-        }
-      } catch (err) {
-        console.error('Failed to load products, using default showcase:', err);
-        setFeaturedProducts(mockBestSellers);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFeatured();
-  }, []);
-
-  const toggleFaq = (idx: number) => {
-    setOpenFaq(openFaq === idx ? null : idx);
-  };
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail.trim()) {
-      setSubscribed(true);
-      setNewsletterEmail('');
+  const loadProducts = async () => {
+    setProductsLoading(true);
+    setProductsError(false);
+    try {
+      const response = await api.get('/products/');
+      setProducts(catalogProducts(response.data));
+    } catch (error) {
+      console.error('Failed to load homepage products:', error);
+      setProductsError(true);
+    } finally {
+      setProductsLoading(false);
     }
   };
 
+  useEffect(() => {
+    void loadProducts();
+  }, []);
+
+  const submitNewsletter = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setNewsletterError(true);
+      setNewsletterMessage('Please enter a valid email address.');
+      return;
+    }
+    setNewsletterError(false);
+    setNewsletterMessage('Thanks! Your email is valid, but newsletter sign-up is not connected yet.');
+    setEmail('');
+  };
+
   return (
-    <div className="space-y-16 sm:space-y-20 pb-20 bg-transparent">
-      
-      {/* 1. HERO SECTION */}
-      <section className="relative pt-6 sm:pt-10 px-4 sm:px-6 2xl:px-10">
-        <div className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto">
-          {/* Main Floating Hero Card */}
-          <div className="bg-white/90 backdrop-blur-md rounded-[36px] sm:rounded-[44px] p-6 sm:p-10 2xl:p-14 border border-purple-100/80 shadow-[0_15px_40px_-5px_rgba(142,87,245,0.08)] animate-fade-in relative overflow-hidden">
-            
-            {/* Ambient decorative background blobs inside card */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-pink-200/30 via-purple-200/20 to-transparent rounded-full blur-2xl pointer-events-none -mr-20 -mt-20" />
-            <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-purple-200/20 to-pink-100/20 rounded-full blur-2xl pointer-events-none -ml-20 -mb-20" />
-
-            <div className="relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-              
-              {/* Left Column: Hero Content */}
-              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-                {/* Premium Baby Products Pill */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F2EAFF] text-fimiku-cta text-xs font-bold tracking-wide uppercase border border-purple-200/60 shadow-sm">
-                  <Heart className="w-3.5 h-3.5 fill-fimiku-cta" /> Premium Baby Products
-                </div>
-
-                {/* Main Headline */}
-                <h1 className="text-3xl sm:text-5xl 2xl:text-6xl font-bold text-fimiku-darkText tracking-tight leading-[1.18]">
-                  The Safest Choice for <br className="hidden sm:inline" />
-                  <span className="bg-gradient-to-r from-[#8E57F5] via-[#A855F7] to-[#EC4899] bg-clip-text text-transparent">
-                    Happy Little Ones
-                  </span>
-                </h1>
-
-                {/* Description */}
-                <p className="text-fimiku-secondaryText text-xs sm:text-sm md:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  Premium food-grade silicone toys, utensils and accessories designed for your baby&apos;s ultimate comfort.
-                </p>
-
-                {/* Hero CTA Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-1">
-                  <Link
-                    href="/shop"
-                    className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#9764FA] to-[#BA75F9] hover:from-[#8B5CF6] hover:to-[#A855F7] text-white text-xs sm:text-sm font-semibold rounded-full transition shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <span>Shop Now</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <Link
-                    href="#bestsellers"
-                    className="w-full sm:w-auto px-8 py-3.5 bg-white text-fimiku-darkText border border-purple-100 hover:bg-[#F6EFFD] text-xs sm:text-sm font-semibold rounded-full transition shadow-sm flex items-center justify-center"
-                  >
-                    View Best Sellers
-                  </Link>
-                </div>
-
-                {/* 4 Feature Badges */}
-                <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3">
-                  <div className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full bg-[#F5EFFF] text-[11px] sm:text-xs font-semibold text-fimiku-cta border border-purple-200/50">
-                    <Check className="w-3.5 h-3.5 text-fimiku-cta" /> BPA Free
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full bg-[#FDF0F6] text-[11px] sm:text-xs font-semibold text-pink-600 border border-pink-200/50">
-                    <Check className="w-3.5 h-3.5 text-pink-600" /> Phthalate Free
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full bg-[#F5EFFF] text-[11px] sm:text-xs font-semibold text-fimiku-cta border border-purple-200/50">
-                    <Check className="w-3.5 h-3.5 text-fimiku-cta" /> Food Grade
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full bg-[#FDF0F6] text-[11px] sm:text-xs font-semibold text-pink-600 border border-pink-200/50">
-                    <Check className="w-3.5 h-3.5 text-pink-600" /> Easy to Clean
-                  </div>
-                </div>
+    <div className="pb-16">
+      <section className="mx-auto max-w-[1320px] px-4 pb-8 pt-7 sm:px-6 sm:pt-10 lg:px-8">
+        <div className="relative grid min-h-[440px] overflow-hidden rounded-[30px] bg-[#f6f0ff] shadow-[0_18px_50px_rgba(84,58,121,.09)] lg:grid-cols-[.92fr_1.08fr]">
+          <div className="relative z-10 flex items-center px-6 py-10 sm:px-10 lg:px-12 xl:px-16">
+            <div className="max-w-[510px]">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#e5d8f8] bg-white/85 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[.13em] text-[#7955a7]">
+                <Heart className="h-3.5 w-3.5 fill-current" /> Made for little beginnings
               </div>
-
-              {/* Right Column: Hero Visual */}
-              <div className="lg:col-span-5 relative flex items-center justify-center">
-                <div className="relative w-full max-w-md aspect-[4/3] sm:aspect-square rounded-[32px] overflow-hidden bg-gradient-to-tr from-[#F4EDFE] via-[#FAF5FE] to-[#FCEEF5] p-3 shadow-inner border border-purple-100/60 flex items-center justify-center group">
-                  <img
-                    src="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=700"
-                    alt="Baby holding soft silicone teether"
-                    className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition duration-500"
-                  />
-                  
-                  {/* Floating Little Smiles Badge */}
-                  <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3.5 py-2 border border-purple-100 shadow-sm flex items-center gap-2 text-left">
-                    <Sparkles className="w-4 h-4 text-fimiku-cta" />
-                    <div>
-                      <p className="text-[10px] font-bold text-fimiku-darkText leading-tight">Little smiles</p>
-                      <p className="text-[9px] text-fimiku-cta font-medium">Big joy</p>
-                    </div>
-                  </div>
-
-                  {/* Floating 100% Safe Badge */}
-                  <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-2xl px-3.5 py-2 border border-purple-100 shadow-sm flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span className="text-[10px] font-bold text-fimiku-darkText">100% Non-Toxic</span>
-                  </div>
-                </div>
+              <h1 className="text-[2.55rem] font-semibold leading-[1.08] tracking-[-.045em] text-[#29263a] sm:text-5xl xl:text-[3.65rem]">
+                The safest choice for <span className="text-[#8c69bd]">happy little ones.</span>
+              </h1>
+              <p className="mt-5 max-w-md text-sm leading-7 text-[#6d6879] sm:text-base">
+                Thoughtful silicone toys and everyday essentials, made to bring a little more joy to growing up.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href="/shop" className="inline-flex items-center gap-2 rounded-full bg-[#8c69bd] px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#7653a7]">
+                  Shop the collection <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="#bestsellers" className="rounded-full border border-[#d9c9ed] bg-white px-6 py-3.5 text-sm font-semibold text-[#514560] transition hover:bg-[#fbf8ff]">
+                  Meet the favourites
+                </Link>
               </div>
-
-            </div>
-
-          </div>
-
-          {/* Trust Badges Bar */}
-          <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-5 border border-purple-100/80 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#FDF0F6] flex items-center justify-center text-pink-500 border border-pink-200/50 flex-shrink-0">
-                <Heart className="w-4 h-4 fill-pink-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-xs sm:text-sm text-fimiku-darkText">Safe Materials</p>
-                <p className="text-[10px] text-fimiku-grayText">For baby&apos;s health</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#F4EDFE] flex items-center justify-center text-fimiku-cta border border-purple-200/50 flex-shrink-0">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-xs sm:text-sm text-fimiku-darkText">Fast Shipping</p>
-                <p className="text-[10px] text-fimiku-grayText">To your doorstep</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#FDF0F6] flex items-center justify-center text-pink-500 border border-pink-200/50 flex-shrink-0">
-                <RefreshCw className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-xs sm:text-sm text-fimiku-darkText">Easy Returns</p>
-                <p className="text-[10px] text-fimiku-grayText">Hassle-free shopping</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-[#F4EDFE] flex items-center justify-center text-fimiku-cta border border-purple-200/50 flex-shrink-0">
-                <Headphones className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-xs sm:text-sm text-fimiku-darkText">Dedicated Support</p>
-                <p className="text-[10px] text-fimiku-grayText">We&apos;re here to help</p>
+              <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#6f6480]">
+                {['Soft, thoughtful designs', 'Made for everyday moments', 'Carefully chosen materials'].map((label) => (
+                  <span key={label} className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#7c9d77]" />{label}</span>
+                ))}
               </div>
             </div>
           </div>
+          <div className="relative min-h-[280px] lg:min-h-[500px]">
+            <img
+              src="https://images.unsplash.com/photo-1718471965121-71aa23c82941?auto=format&fit=crop&q=85&w=1400"
+              alt="A baby exploring a colourful teething toy in a high chair"
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#f6f0ff] via-[#f6f0ff]/30 to-transparent lg:w-1/3" />
+            <div className="absolute bottom-5 right-5 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-lg sm:bottom-8 sm:right-8">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3edff] text-[#8c69bd]"><Sparkles className="h-5 w-5" /></div>
+              <div><p className="text-xs font-bold text-[#302b3d]">Made for little smiles</p><p className="mt-0.5 text-[11px] text-[#81798c]">Play, grow, repeat</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          {/* Quick Category Navigation Pills */}
-          <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 overflow-x-auto py-4 mt-2 no-scrollbar">
-            {[
-              { name: "Teething Toys", href: "/shop?category=teethers" },
-              { name: "Bath Toys", href: "/shop?category=bath" },
-              { name: "Feeding Accessories", href: "/shop?category=feeding" },
-              { name: "Sensory Play", href: "/shop?category=sensory" },
-              { name: "Baby Play", href: "/shop?category=baby-play" },
-              { name: "Kitchen Silicone", href: "/shop?category=kitchen" },
-            ].map((cat, idx) => (
-              <Link
-                key={idx}
-                href={cat.href}
-                className="whitespace-nowrap px-5 py-2 rounded-full bg-white/90 hover:bg-[#F4EDFE] border border-purple-100 text-xs sm:text-sm font-medium text-fimiku-darkText transition shadow-sm"
-              >
-                {cat.name}
+      <section id="bestsellers" className="mx-auto max-w-[1320px] scroll-mt-28 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">Little favourites</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">Best sellers</h2><p className="mt-2 text-sm text-[#777181]">Loved little essentials, chosen from our collection.</p></div>
+          <Link href="/shop" className="hidden items-center gap-1 text-sm font-semibold text-[#7955a7] hover:text-[#56377d] sm:inline-flex">Shop all <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+        {productsLoading ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">{Array.from({ length: 6 }, (_, index) => <div key={index} className="aspect-[.78] animate-pulse rounded-2xl bg-[#f0edf3]" />)}</div>
+        ) : productsError ? (
+          <div className="rounded-2xl border border-[#eadff2] bg-white p-8 text-center">
+            <p className="font-semibold text-[#383345]">We couldn’t load the collection just now.</p><button onClick={() => void loadProducts()} className="mt-3 text-sm font-semibold text-[#7955a7] underline underline-offset-4">Try again</button>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="rounded-2xl border border-[#eadff2] bg-white p-8 text-center"><p className="font-semibold text-[#383345]">No favourites are available at the moment.</p><Link href="/shop" className="mt-3 inline-block text-sm font-semibold text-[#7955a7] underline underline-offset-4">Explore the shop</Link></div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
+            {products.map((product) => (
+              <article key={product.id} className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#eee9f1] bg-white transition hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(61,45,84,.09)]">
+                <Link href={`/product/${product.id}`} className="relative block aspect-square overflow-hidden bg-[#f8f5fa]">
+                  <img src={getProductImage(product)} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" loading="lazy" />
+                  {product.is_featured && <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#78569d]">Favourite</span>}
+                </Link>
+                <div className="flex flex-1 flex-col p-3 sm:p-4">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.1em] text-[#9a83b5]">{product.category_name ?? product.category?.name ?? 'Fimiku favourite'}</p>
+                  <Link href={`/product/${product.id}`} className="line-clamp-2 min-h-10 text-xs font-semibold leading-5 text-[#302b3d] hover:text-[#7955a7] sm:text-sm">{product.name}</Link>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#898391]">{product.description}</p>
+                  <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#f0edf2] pt-3">
+                    <span className="text-sm font-bold text-[#302b3d]">₹{product.discount_price || product.final_price || product.price}</span>
+                    <button onClick={() => void addToCart(product)} aria-label={`Add ${product.name} to cart`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f4effb] text-[#7955a7] transition hover:bg-[#8c69bd] hover:text-white"><ShoppingBag className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <Link href="/shop" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-[#7955a7] sm:hidden">Shop all <ArrowRight className="h-4 w-4" /></Link>
+      </section>
+
+      <section className="bg-[#f8f5fc] py-12 sm:py-16">
+        <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">Find your little something</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">Shop by category</h2><p className="mt-2 text-sm text-[#777181]">Explore the everyday moments that make up a childhood.</p></div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-7">
+            {categories.map((category) => (
+              <Link key={category.title} href={category.href} className="group overflow-hidden rounded-2xl border border-[#ebe4f0] bg-white transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="aspect-square overflow-hidden bg-[#f4eff8]"><img src={category.image} alt={category.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" /></div>
+                <div className="p-3"><h3 className="text-xs font-bold text-[#332d40] sm:text-sm">{category.title}</h3><p className="mt-1 text-[10px] leading-4 text-[#898391]">{category.note}</p><span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-[#7955a7]">Explore <ArrowRight className="h-3 w-3" /></span></div>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 2. BEST SELLERS SECTION */}
-      <section id="bestsellers" className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
-          <div>
-            <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText flex items-center gap-2">
-              <Flame className="w-6 h-6 text-amber-500 fill-amber-500" /> Best Sellers
-            </h2>
-            <p className="text-xs sm:text-sm text-fimiku-grayText">Most loved by kids and parents alike</p>
-          </div>
-          <Link
-            href="/shop"
-            className="text-xs sm:text-sm font-bold text-fimiku-cta hover:text-fimiku-primary flex items-center gap-1 transition"
-          >
-            View All <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 2xl:gap-8">
-          {featuredProducts.map((prod) => (
-            <div
-              key={prod.id}
-              className="bg-white rounded-3xl p-4 sm:p-5 border border-fimiku-lightBorder shadow-sm hover:shadow-card transition flex flex-col justify-between group"
-            >
-              <div className="space-y-3">
-                {/* Category Pill with Green Dot */}
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-fimiku-secondaryText">
-                  <span className="w-2 h-2 rounded-full bg-fimiku-softGreen border border-emerald-400"></span>
-                  <span className="truncate">{prod.category?.name || "Feeding Accessories"}</span>
-                </div>
-
-                {/* Product Image */}
-                <div className="relative aspect-square rounded-2xl bg-fimiku-softLavender overflow-hidden flex items-center justify-center">
-                  <img
-                    src={getProductImage(prod)}
-                    alt={prod.name}
-                    className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
-                  />
-                  {/* Wishlist Button */}
-                  <button
-                    onClick={() => toggleWishlist(prod)}
-                    className={`absolute top-2 right-2 p-1.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm transition ${
-                      isInWishlist(prod.id) ? 'text-red-500 fill-red-500' : 'text-fimiku-grayText hover:text-fimiku-cta'
-                    }`}
-                    title="Save to Wishlist"
-                  >
-                    <Heart className={`w-4 h-4 ${isInWishlist(prod.id) ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Product Title */}
-                <Link href={`/product/${prod.id}`}>
-                  <h3 className="font-bold text-xs sm:text-sm text-fimiku-darkText line-clamp-2 hover:text-fimiku-primary transition">
-                    {prod.name}
-                  </h3>
-                </Link>
-
-                {/* Ratings */}
-                <div className="flex items-center gap-1 text-amber-400 text-xs">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-current" />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-fimiku-grayText font-medium">({prod.reviews_count || 1})</span>
-                </div>
-              </div>
-
-              {/* Price & Add to Cart Button */}
-              <div className="pt-4 flex items-center justify-between border-t border-fimiku-lightBorder mt-3">
-                <div>
-                  <div className="text-sm sm:text-base font-bold text-fimiku-darkText">
-                    ₹{prod.discount_price || prod.price}
-                  </div>
-                  {prod.discount_price && (
-                    <div className="text-[11px] text-fimiku-grayText line-through -mt-1">
-                      ₹{prod.price}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => addToCart(prod)}
-                  className="p-2.5 rounded-2xl bg-fimiku-veryLightLavender hover:bg-fimiku-cta text-fimiku-cta hover:text-white transition shadow-sm border border-fimiku-lightPurple/40"
-                  title="Add to Cart"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                </button>
-              </div>
+      <section className="mx-auto max-w-[1320px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">Little ones, big milestones</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">A little something for every age</h2></div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {ageGroups.map((group) => <article key={group.title} className={`overflow-hidden rounded-[24px] border border-black/[.04] ${group.tone}`}>
+            <div className="grid min-h-[225px] grid-cols-[1fr_.9fr] items-center">
+              <div className="py-6 pl-5 sm:pl-7"><span className="text-[11px] font-bold uppercase tracking-[.13em] text-[#8569a5]">For little explorers</span><h3 className="mt-2 text-xl font-semibold text-[#302b3d]">{group.title}</h3><p className="mt-2 text-xs leading-5 text-[#777181]">{group.description}</p><Link href={group.href} className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-[#7955a7] shadow-sm transition hover:bg-[#8c69bd] hover:text-white">Shop now <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+              <div className="h-full min-h-[225px] overflow-hidden"><img src={group.image} alt="" className="h-full w-full object-cover" loading="lazy" /></div>
             </div>
-          ))}
+          </article>)}
         </div>
       </section>
 
-      {/* 3. SHOP BY CATEGORY */}
-      <section className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="text-center space-y-1">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-fimiku-cta uppercase tracking-wide">
-            <Gift className="w-4 h-4 text-pink-500" /> Explore Collections
-          </div>
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">Shop by Category</h2>
-          <p className="text-xs sm:text-sm text-fimiku-secondaryText">Explore our most loved collections for your little one</p>
-        </div>
-
-        {/* 4 Main Pastel Category Cards matching Image 2 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              title: "0 – 12 Months",
-              subtitle: "Teethers, pacifiers, feeding essentials",
-              href: "/shop?category=teethers",
-              bg: "bg-gradient-to-b from-[#F3EEFF] to-[#FAF8FF]",
-              border: "border-purple-200/60",
-              btnBg: "bg-gradient-to-r from-[#9764FA] to-[#BA75F9]",
-              img: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=500"
-            },
-            {
-              title: "1 – 2 Years",
-              subtitle: "Bowls, cups, plates, cutlery & more",
-              href: "/shop?category=feeding",
-              bg: "bg-gradient-to-b from-[#FDF0F6] to-[#FFF9FB]",
-              border: "border-pink-200/60",
-              btnBg: "bg-gradient-to-r from-[#EC4899] to-[#F472B6]",
-              img: "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=500"
-            },
-            {
-              title: "3+ Years",
-              subtitle: "Creative play & learning toys",
-              href: "/shop?category=sensory",
-              bg: "bg-gradient-to-b from-[#F3EEFF] to-[#FAF8FE]",
-              border: "border-purple-200/60",
-              btnBg: "bg-gradient-to-r from-[#9764FA] to-[#BA75F9]",
-              img: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=500"
-            },
-            {
-              title: "Baby Care",
-              subtitle: "Bath time, hygiene & daily care",
-              href: "/shop?category=bath",
-              bg: "bg-gradient-to-b from-[#FDF0F4] to-[#FFF9FA]",
-              border: "border-pink-200/60",
-              btnBg: "bg-gradient-to-r from-[#EC4899] to-[#F472B6]",
-              img: "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=500"
-            },
-          ].map((cat, idx) => (
-            <div
-              key={idx}
-              className={`${cat.bg} rounded-[32px] p-6 border ${cat.border} shadow-[0_8px_30px_rgb(142,87,245,0.05)] hover:shadow-floating transition-all duration-300 flex flex-col items-center justify-between text-center group`}
-            >
-              <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden mb-4 p-2 bg-white/70 backdrop-blur-sm shadow-inner flex items-center justify-center">
-                <img
-                  src={cat.img}
-                  alt={cat.title}
-                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition duration-500"
-                />
-              </div>
-              <div className="space-y-1.5 mb-5">
-                <h3 className="font-bold text-base sm:text-lg text-fimiku-darkText group-hover:text-fimiku-primary transition">
-                  {cat.title}
-                </h3>
-                <p className="text-xs text-fimiku-secondaryText line-clamp-1">
-                  {cat.subtitle}
-                </p>
-              </div>
-              <Link
-                href={cat.href}
-                className={`w-full py-2.5 ${cat.btnBg} hover:opacity-90 text-white font-semibold text-xs rounded-full transition shadow-sm hover:shadow-md flex items-center justify-center gap-1.5`}
-              >
-                <span>Shop Now</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. THE FIMIKU PROMISE / WHY PARENTS TRUST US */}
-      <section className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-[#F2EAFF] text-fimiku-cta text-xs font-bold tracking-wider uppercase border border-purple-200/60">
-            THE FIMIKU PROMISE
-          </div>
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">Why Parents Trust Us?</h2>
-          <p className="text-xs sm:text-sm text-fimiku-secondaryText max-w-lg mx-auto leading-relaxed">
-            More than just toys—we provide peace of mind for you and joy for your baby.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Medical Grade Safety",
-              desc: "100% food-grade silicone, FDA approved, and totally free from BPA, Phthalates, and PVC. Safe enough to chew all day!",
-              icon: ShieldCheck,
-              iconColor: "text-fimiku-cta",
-              bgColor: "bg-purple-100/70"
-            },
-            {
-              title: "Growth Focused",
-              desc: "Designed with pediatric experts to actively stimulate sensory development, motor skills, and creative play in every stage.",
-              icon: Sparkles,
-              iconColor: "text-pink-600",
-              bgColor: "bg-pink-100/70"
-            },
-            {
-              title: "Eco-Friendly Choice",
-              desc: "Durable, mold-resistant, and endlessly reusable. Better for your baby's future, and better for the planet than plastics.",
-              icon: Leaf,
-              iconColor: "text-emerald-600",
-              bgColor: "bg-emerald-100/70"
-            },
-            {
-              title: "Boil & Bite Ready",
-              desc: "Extremely heat resistant. Simply toss them in the dishwasher or boil them to sterilize. Say goodbye to hidden mold!",
-              icon: Flame,
-              iconColor: "text-amber-500",
-              bgColor: "bg-amber-100/70"
-            },
-            {
-              title: "Instant Soothing Relief",
-              desc: "The perfect soft-yet-firm texture to massage tender gums and provide immediate relief during difficult teething phases.",
-              icon: Smile,
-              iconColor: "text-fimiku-cta",
-              bgColor: "bg-purple-100/70"
-            },
-            {
-              title: "Built to Last",
-              desc: "Our toys won't break, crack, or fade. They are designed to withstand years of play and can be passed down to siblings.",
-              icon: Shield,
-              iconColor: "text-pink-600",
-              bgColor: "bg-pink-100/70"
-            },
-          ].map((pillar, idx) => (
-            <div
-              key={idx}
-              className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-purple-100/70 shadow-sm hover:shadow-card transition text-center space-y-3 flex flex-col items-center justify-center"
-            >
-              <div className={`w-12 h-12 mx-auto rounded-2xl ${pillar.bgColor} flex items-center justify-center border border-purple-200/40 shadow-sm`}>
-                <pillar.icon className={`w-6 h-6 ${pillar.iconColor}`} />
-              </div>
-              <h3 className="font-bold text-base sm:text-lg text-fimiku-darkText">{pillar.title}</h3>
-              <p className="text-xs sm:text-sm text-fimiku-secondaryText max-w-sm mx-auto leading-relaxed">
-                {pillar.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. SILICONE VS PLASTIC */}
-      <section className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="text-center space-y-1">
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">Silicone vs. Plastic</h2>
-          <p className="text-xs sm:text-sm text-fimiku-secondaryText">Why we choose silicone for your little one</p>
-        </div>
-
-        {/* Comparison Cards Grid */}
-        <div className="grid md:grid-cols-2 gap-6 items-stretch">
-          {/* Soft Purple Card: Premium Silicone */}
-          <div className="bg-gradient-to-b from-[#F3EEFF] to-[#FAF8FF] rounded-[32px] p-6 sm:p-8 border border-purple-200/70 shadow-sm space-y-4 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EADBFE] text-fimiku-cta font-bold text-xs sm:text-sm border border-purple-200">
-                <CheckCircle2 className="w-4 h-4 text-fimiku-cta" />
-                <span>Premium Silicone</span>
-              </div>
-              <ul className="space-y-3 text-xs sm:text-sm text-fimiku-darkText">
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-purple-200/80 flex items-center justify-center flex-shrink-0 text-fimiku-cta">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>100% Non-Toxic & BPA-Free</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-purple-200/80 flex items-center justify-center flex-shrink-0 text-fimiku-cta">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Soft, Safe & Ultra Durable</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-purple-200/80 flex items-center justify-center flex-shrink-0 text-fimiku-cta">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Heat & Cold Resistant (Dishwasher/Sterilizer Safe)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-purple-200/80 flex items-center justify-center flex-shrink-0 text-fimiku-cta">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Easy to Clean & Naturally Bacteria Resistant</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Soft Pink Card: Traditional Plastic */}
-          <div className="bg-gradient-to-b from-[#FDF0F4] to-[#FFF9FA] rounded-[32px] p-6 sm:p-8 border border-pink-200/70 shadow-sm space-y-4 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFE2EC] text-pink-700 font-bold text-xs sm:text-sm border border-pink-200">
-                <X className="w-4 h-4 text-pink-600" />
-                <span>Traditional Plastic</span>
-              </div>
-              <ul className="space-y-3 text-xs sm:text-sm text-fimiku-darkText">
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-pink-200/80 flex items-center justify-center flex-shrink-0 text-pink-600">
-                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>May contain harmful chemicals (BPA / Phthalates)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-pink-200/80 flex items-center justify-center flex-shrink-0 text-pink-600">
-                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Less durable & wears out faster</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-pink-200/80 flex items-center justify-center flex-shrink-0 text-pink-600">
-                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Can release microplastics when heated</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-pink-200/80 flex items-center justify-center flex-shrink-0 text-pink-600">
-                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                  </div>
-                  <span>Scratches easily (hides food bacteria)</span>
-                </li>
-              </ul>
-            </div>
+      <section className="bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-8 max-w-xl text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">The Fimiku difference</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">Why parents choose Fimiku</h2><p className="mt-2 text-sm text-[#777181]">Little details, thoughtfully considered for everyday family life.</p></div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {trustFeatures.map((feature) => <article key={feature.title} className="flex gap-4 rounded-2xl border border-[#eee9f1] bg-[#fdfcff] p-5"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f1ebfa] text-[#8565b0]"><feature.icon className="h-5 w-5" /></div><div><h3 className="text-sm font-semibold text-[#302b3d]">{feature.title}</h3><p className="mt-1 text-xs leading-5 text-[#817b89]">{feature.text}</p></div></article>)}
           </div>
         </div>
       </section>
 
-      {/* 7. BORN FROM A MOTHER'S LOVE */}
-      <section className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10">
-        <div className="bg-white rounded-[32px] p-6 sm:p-10 2xl:p-12 border border-fimiku-lightBorder shadow-card grid lg:grid-cols-2 gap-8 items-center">
-          <div className="w-full aspect-[4/3] lg:aspect-auto lg:h-[380px] rounded-2xl overflow-hidden shadow-inner">
-            <img
-              src="https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=900"
-              alt="Mother and baby bonding with Fimiku silicone teether"
-              className="w-full h-full object-cover"
-            />
+      <section className="mx-auto max-w-[1320px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid overflow-hidden rounded-[28px] bg-[#f6f1f8] lg:grid-cols-2">
+          <div className="min-h-[300px] overflow-hidden sm:min-h-[420px]"><img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?auto=format&fit=crop&q=85&w=1200" alt="A newborn’s feet nestled in a soft blanket" className="h-full w-full object-cover object-center" loading="lazy" /></div>
+          <div className="flex items-center px-6 py-10 sm:px-10 lg:px-14"><div className="max-w-lg"><span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.17em] text-[#9274b8]"><Heart className="h-4 w-4" /> Our story</span><h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-[#29263a] sm:text-4xl">Born from a mother’s love</h2><p className="mt-5 text-sm leading-7 text-[#706a7b]">Fimiku began with a simple wish: to make the everyday things little ones touch feel softer, safer and more thoughtful. Every detail starts with care for the small moments that mean everything.</p><Link href="/about" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#8c69bd] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#7653a7]">Read our story <ArrowRight className="h-4 w-4" /></Link></div></div>
+        </div>
+      </section>
+
+      <section className="bg-[#f8f5fc] py-12 sm:py-16">
+        <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">A gentler everyday</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">Silicone vs. plastic</h2><p className="mt-2 text-sm text-[#777181]">A few things to consider when choosing little essentials.</p></div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="overflow-hidden rounded-[24px] border border-[#e9def4] bg-white">
+              <div className="grid min-h-[260px] sm:grid-cols-[.9fr_1.1fr]"><img src="/products/silicone-bib-bowl-set.webp" alt="Pastel silicone bib and bowl set" className="h-full min-h-[220px] w-full object-cover" loading="lazy" /><div className="p-6 sm:p-7"><span className="inline-flex items-center gap-2 rounded-full bg-[#f0eafa] px-3 py-1.5 text-xs font-bold text-[#7955a7]"><Check className="h-4 w-4" /> Premium silicone</span><ul className="mt-5 space-y-3 text-xs leading-5 text-[#635e6d]"><li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#6b9b78]" />Soft, flexible feel</li><li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#6b9b78]" />Simple to wash and care for</li><li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#6b9b78]" />Made for everyday routines</li></ul></div></div>
+            </article>
+            <article className="overflow-hidden rounded-[24px] border border-[#eee6e9] bg-white">
+              <div className="grid min-h-[260px] sm:grid-cols-[.9fr_1.1fr]"><img src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=85&w=900" alt="A toddler exploring a colourful plastic toy" className="h-full min-h-[220px] w-full object-cover" loading="lazy" /><div className="p-6 sm:p-7"><span className="inline-flex items-center gap-2 rounded-full bg-[#fff0f1] px-3 py-1.5 text-xs font-bold text-[#a4626b]"><X className="h-4 w-4" /> Traditional plastic</span><ul className="mt-5 space-y-3 text-xs leading-5 text-[#635e6d]"><li className="flex gap-2"><CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-[#bf7b83]" />Material and care vary by product</li><li className="flex gap-2"><CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-[#bf7b83]" />Check age guidance and labels</li><li className="flex gap-2"><CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-[#bf7b83]" />Inspect regularly for wear</li></ul></div></div>
+            </article>
           </div>
-
-          <div className="space-y-4 text-left">
-            <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">Born from a Mother&apos;s Love</h2>
-            <p className="text-xs sm:text-sm md:text-base text-fimiku-secondaryText leading-relaxed">
-              Fimiku started with a simple question: <em>&ldquo;Can we make toys that are as safe as they are fun?&rdquo;</em>
-            </p>
-            <p className="text-xs sm:text-sm md:text-base text-fimiku-secondaryText leading-relaxed">
-              Founded in Chennai, our vision is to eliminate harmful plastics from playrooms across India by offering premium, pure silicone alternatives. We hold ourselves to the ultimate standard: if it isn&apos;t safe enough for our own children, it will never reach yours.
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/about"
-                className="px-8 py-3 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs sm:text-sm font-semibold rounded-full transition shadow-md inline-block"
-              >
-                Our Full Story
-              </Link>
-            </div>
-          </div>
+          <p className="mx-auto mt-4 max-w-3xl text-center text-[11px] leading-5 text-[#898391]">Materials, care and safety guidance can vary by individual product. Please refer to the product details and packaging.</p>
         </div>
       </section>
 
-      {/* 8. WHAT PARENTS SAY */}
-      <section className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="text-center space-y-1">
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText flex items-center justify-center gap-2">
-            <MessageSquareQuote className="w-6 h-6 text-fimiku-cta" /> What Parents Say
-          </h2>
-          <p className="text-xs sm:text-sm text-fimiku-secondaryText">Real reviews from real families</p>
-        </div>
+      <section className="mx-auto max-w-[1320px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">Notes from our community</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">A little love from families</h2><p className="mt-2 text-xs text-[#898391]">Sample copy shown for layout preview — not verified customer reviews.</p></div>
+        <div className="grid gap-4 md:grid-cols-3">{sampleTestimonials.map((item) => <article key={item.name} className="rounded-2xl border-t-[3px] border-[#c7b1e0] bg-white p-6 shadow-[0_8px_28px_rgba(61,45,84,.06)]"><div className="flex gap-1 text-[#d19b45]" aria-label="Sample five-star rating">{Array.from({ length: 5 }, (_, index) => <Star key={index} className="h-4 w-4 fill-current" />)}</div><p className="mt-4 min-h-[72px] text-sm leading-6 text-[#625d6b]">“{item.quote}”</p><p className="mt-4 border-t border-[#f0edf2] pt-3 text-xs font-semibold text-[#3b3545]">{item.name}</p><p className="mt-1 text-[10px] uppercase tracking-wide text-[#9a92a2]">Sample review</p></article>)}</div>
+        <div className="mt-5 text-center"><Link href="/shop" className="inline-flex items-center gap-1 text-sm font-semibold text-[#7955a7]">Find your favourite <ArrowRight className="h-4 w-4" /></Link></div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              quote: "My daughter absolutely loves the silicone teethers from Fimiku. Quality is amazing and I have peace of mind!",
-              name: "Priya S.",
-              role: "6-month-old Mom",
-              avatar: "P"
-            },
-            {
-              quote: "Bought the bath toy set for my son. It's so easy to clean and sterilize compared to plastic toys.",
-              name: "Rahul M.",
-              role: "Father, Bengaluru",
-              avatar: "R"
-            },
-            {
-              quote: "The sensory blocks are so soft and vibrant. Best baby purchase this year!",
-              name: "Ananya K.",
-              role: "Mom of twins",
-              avatar: "A"
-            }
-          ].map((rev, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder shadow-sm space-y-4 flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="w-8 h-8 rounded-xl bg-fimiku-veryLightLavender flex items-center justify-center text-fimiku-cta font-serif font-bold text-lg">
-                    &ldquo;
-                  </div>
-                  <div className="flex text-amber-400">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                    ))}
-                  </div>
-                </div>
-
-                <p className="text-xs sm:text-sm text-fimiku-darkText italic leading-relaxed">
-                  &ldquo;{rev.quote}&rdquo;
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <div className="w-9 h-9 rounded-full bg-fimiku-veryLightLavender border border-fimiku-lightPurple/40 text-fimiku-cta font-bold text-xs flex items-center justify-center">
-                  {rev.avatar}
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs sm:text-sm text-fimiku-darkText">{rev.name}</h4>
-                  <p className="text-[11px] text-fimiku-grayText">{rev.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+      <section className="bg-[#fbf9fd] py-12 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div className="mb-7 text-center"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.18em] text-[#9274b8]">Here to help</p><h2 className="text-2xl font-semibold tracking-tight text-[#29263a] sm:text-3xl">Frequently asked questions</h2></div>
+          <div className="space-y-3">{faqItems.map((item, index) => <div key={item.question} className="overflow-hidden rounded-2xl border border-[#eee9f1] bg-white">
+            <h3><button type="button" id={`faq-question-${index}`} aria-expanded={openFaq === index} aria-controls={`faq-answer-${index}`} onClick={() => setOpenFaq(openFaq === index ? null : index)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-[#383345] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8c69bd]"><span>{item.question}</span><ChevronDown className={`h-4 w-4 shrink-0 text-[#8c69bd] transition-transform ${openFaq === index ? 'rotate-180' : ''}`} /></button></h3>
+            <div id={`faq-answer-${index}`} role="region" aria-labelledby={`faq-question-${index}`} hidden={openFaq !== index} className="border-t border-[#f0edf2] px-5 py-4 text-sm leading-6 text-[#777181]">{item.answer}</div>
+          </div>)}</div>
         </div>
       </section>
 
-      {/* 9. FREQUENTLY ASKED QUESTIONS */}
-      <section className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-10 space-y-6">
-        <div className="text-center space-y-1">
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">Frequently Asked Questions</h2>
-        </div>
-
-        <div className="space-y-3">
-          {[
-            {
-              q: "Are Fimiku toys 100% safe for newborns?",
-              a: "Yes! All our products are made from 100% food-grade silicone, which is BPA-free, PVC-free, and Phthalate-free."
-            },
-            {
-              q: "How do I clean and sterilize silicone toys?",
-              a: "Simply wash with warm soapy water, place in the dishwasher top rack, or boil in water for 3-5 minutes to sterilize."
-            },
-            {
-              q: "What is your shipping policy across India?",
-              a: "We offer express shipping across India with standard delivery within 3-5 business days."
-            },
-            {
-              q: "Can silicone toys degrade or harbor mold?",
-              a: "Unlike plastic toys with hollow crevices, non-porous pure silicone does not harbor mold or degrade over time."
-            }
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-2xl border border-fimiku-lightBorder overflow-hidden shadow-sm"
-            >
-              <button
-                onClick={() => toggleFaq(idx)}
-                className="w-full px-6 py-4 text-left font-bold text-xs sm:text-sm text-fimiku-darkText flex items-center justify-between gap-4 hover:bg-fimiku-veryLightLavender transition"
-              >
-                <span>{item.q}</span>
-                {openFaq === idx ? (
-                  <ChevronUp className="w-4 h-4 text-fimiku-cta flex-shrink-0" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-fimiku-grayText flex-shrink-0" />
-                )}
-              </button>
-              {openFaq === idx && (
-                <div className="px-6 pb-4 pt-1 text-xs text-fimiku-secondaryText leading-relaxed border-t border-fimiku-lightBorder/50">
-                  {item.a}
-                </div>
-              )}
-            </div>
-          ))}
+      <section className="mx-auto max-w-[1320px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid items-center gap-7 rounded-[28px] bg-[#f2ecfa] px-6 py-8 sm:px-10 sm:py-10 lg:grid-cols-[1fr_1.1fr]">
+          <div className="flex items-center gap-4 sm:gap-5"><div className="hidden h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-white text-[#8c69bd] sm:flex"><Mail className="h-9 w-9" /></div><div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#9274b8]">A little joy in your inbox</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#29263a]">Get exclusive toy deals!</h2><p className="mt-2 max-w-md text-sm leading-6 text-[#777181]">Hear about new arrivals, thoughtful offers and little ideas for play.</p></div></div>
+          <form noValidate onSubmit={submitNewsletter} className="flex flex-col gap-2 sm:flex-row">
+            <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+            <input id="newsletter-email" type="email" required value={email} onChange={(event) => { setEmail(event.target.value); setNewsletterMessage(''); setNewsletterError(false); }} placeholder="Your email address" aria-invalid={newsletterError} aria-describedby="newsletter-feedback" className="min-w-0 flex-1 rounded-full border border-[#e1d5ed] bg-white px-5 py-3.5 text-sm text-[#383345] outline-none transition placeholder:text-[#aaa3b0] focus:border-[#9a7cc1] focus:ring-2 focus:ring-[#9a7cc1]/20" />
+            <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8c69bd] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#7653a7]">Subscribe <ArrowRight className="h-4 w-4" /></button>
+            {newsletterMessage && <p id="newsletter-feedback" role={newsletterError ? 'alert' : 'status'} className={`text-xs sm:basis-full ${newsletterError ? 'text-red-700' : 'text-[#685b77]'}`}>{newsletterMessage}</p>}
+          </form>
         </div>
       </section>
-
-      {/* 10. GET EXCLUSIVE TOY DEALS / NEWSLETTER */}
-      <section className="max-w-5xl 2xl:max-w-6xl mx-auto px-4 sm:px-6 2xl:px-10">
-        <div className="bg-white rounded-3xl p-6 sm:p-10 2xl:p-12 border border-fimiku-lightBorder shadow-card text-center space-y-4">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-fimiku-veryLightLavender flex items-center justify-center border border-fimiku-lightPurple/40">
-            <Gift className="w-6 h-6 text-fimiku-cta" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl 2xl:text-4xl font-bold text-fimiku-darkText">
-            Get Exclusive Toy Deals!
-          </h2>
-          <p className="text-xs sm:text-sm text-fimiku-secondaryText max-w-md mx-auto leading-relaxed">
-            Subscribe and be the first to know about new arrivals, offers and kid-friendly tips.
-          </p>
-
-          {subscribed ? (
-            <div className="p-3.5 rounded-2xl bg-fimiku-softGreen border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700" /> Thank you for subscribing to Fimiku exclusive deals!
-            </div>
-          ) : (
-            <form onSubmit={handleSubscribe} className="flex max-w-md mx-auto gap-2 pt-2">
-              <input
-                type="email"
-                required
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 bg-fimiku-softLavender rounded-full border border-fimiku-lightBorder text-xs text-fimiku-darkText focus:outline-none focus:border-fimiku-primary shadow-sm"
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs font-semibold rounded-full transition shadow-md"
-              >
-                Subscribe
-              </button>
-            </form>
-          )}
-        </div>
-      </section>
-
     </div>
   );
 }
-
-const mockBestSellers: ProductType[] = [
-  {
-    id: 1,
-    name: "3 in 1 Pet slow feeder bowl",
-    slug: "3-in-1-pet-slow-feeder-bowl",
-    description: "Premium food-grade silicone multi-purpose feeder.",
-    price: 1422.00,
-    discount_price: 711.02,
-    image_url: "https://images.unsplash.com/photo-1584839619925-3e41416f393f?auto=format&fit=crop&q=80&w=600",
-    category: { id: 1, name: "Feeding Accessories", slug: "feeding" },
-    stock: 50,
-    is_active: true,
-    is_featured: true,
-    reviews_count: 2,
-    average_rating: 5,
-  },
-  {
-    id: 2,
-    name: "SILICONE KITCHEN MAT",
-    slug: "silicone-kitchen-mat",
-    description: "Multi-purpose silicone kitchen drying and heat mat.",
-    price: 1544.00,
-    discount_price: 772.38,
-    image_url: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=600",
-    category: { id: 2, name: "Kitchen Silicone", slug: "kitchen" },
-    stock: 45,
-    is_active: true,
-    is_featured: true,
-    reviews_count: 1,
-    average_rating: 5,
-  },
-  {
-    id: 3,
-    name: "SILICONE BABY FEEDING SET",
-    slug: "silicone-baby-feeding-set",
-    description: "Soft food-grade suction bowl, bib, and spoon set.",
-    price: 1723.00,
-    discount_price: 861.50,
-    image_url: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=600",
-    category: { id: 1, name: "Feeding Accessories", slug: "feeding" },
-    stock: 30,
-    is_active: true,
-    is_featured: true,
-    reviews_count: 0,
-    average_rating: 5,
-  },
-  {
-    id: 4,
-    name: "SILICONE FOLDABLE TUB",
-    slug: "silicone-foldable-tub",
-    description: "Space-saving collapsible silicone infant bath tub.",
-    price: 2200.00,
-    discount_price: 1089.34,
-    image_url: "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&q=80&w=600",
-    category: { id: 3, name: "Bath Toys", slug: "bath" },
-    stock: 20,
-    is_active: true,
-    is_featured: true,
-    reviews_count: 1,
-    average_rating: 5,
-  }
-];

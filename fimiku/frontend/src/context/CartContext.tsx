@@ -13,6 +13,7 @@ export interface ProductType {
   final_price?: string | number;
   image_url: string;
   category_name?: string;
+  category_slug?: string;
   category?: { id: number; name: string; slug: string };
   target_age?: string;
   material?: string;
