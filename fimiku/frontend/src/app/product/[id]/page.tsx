@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Heart, Sparkles, RefreshCw, Star, Check, ArrowLeft, Plus, Minus, ShoppingBag, Droplets } from 'lucide-react';
 import { api } from '@/lib/api';
+import { getProductGallery } from '@/lib/productImages';
 import { useCart, ProductType } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -12,6 +13,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
@@ -24,6 +26,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     try {
       const res = await api.get(`/products/${params.id}/`);
       setProduct(res.data);
+      setActiveImageIndex(0);
     } catch (err) {
       console.error('Failed to load product detail:', err);
     } finally {
@@ -89,6 +92,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     );
   }
 
+  const catalogImages = Array.from(
+    new Set(
+      [product.image_url, ...(Array.isArray(product.additional_images) ? product.additional_images : [])]
+        .filter((image): image is string => typeof image === 'string' && image.trim().length > 0)
+    )
+  );
+  const productImages = getProductGallery(product).slice(0, 4);
+  const hasRelatedImages = productImages.some((image) => !catalogImages.includes(image));
+  const activeImage = productImages[activeImageIndex] || product.image_url;
+
   return (
     <div className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 py-8 space-y-12 pb-36 md:pb-24 bg-fimiku-softLavender">
       
@@ -104,8 +117,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             <img
-              src={product.image_url}
-              alt={product.name}
+              src={activeImage}
+              alt={`${product.name}${productImages.length > 1 ? ` - image ${activeImageIndex + 1} of ${productImages.length}` : ''}`}
               className="w-full h-full object-cover"
             />
             <button
@@ -122,6 +135,38 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               Age: {product.target_age || 'All Ages'}
             </span>
           </div>
+          {productImages.length > 1 && (
+            <>
+              <div className="flex gap-3 overflow-x-auto pb-1" aria-label="Product photos">
+                {productImages.map((image: string, index: number) => (
+                  <button
+                    key={image}
+                    type="button"
+                    onClick={() => setActiveImageIndex(index)}
+                    aria-label={`Show product image ${index + 1} of ${productImages.length}`}
+                    aria-pressed={activeImageIndex === index}
+                    className={`relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border bg-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-cta focus-visible:ring-offset-2 ${
+                      activeImageIndex === index
+                        ? 'border-fimiku-cta ring-2 ring-fimiku-cta/20'
+                        : 'border-fimiku-lightBorder hover:border-fimiku-cta/50'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+              {hasRelatedImages && (
+                <p className="text-xs text-fimiku-grayText">
+                  Additional photos show related products while more product-specific images are prepared.
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Product Information & Purchase Controls */}

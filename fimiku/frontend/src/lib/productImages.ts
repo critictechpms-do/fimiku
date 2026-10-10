@@ -47,5 +47,24 @@ export function getProductGallery(product: any): string[] {
     ? product.additional_images.filter(Boolean)
     : [];
 
-  return Array.from(new Set([main, ...extra]));
+  const relatedImagesBySlug: Record<string, string[]> = {
+    'pastel-silicone-stacking-tower': [
+      '/products/sensory-teether-collection.webp',
+      '/products/blue-textured-bone-teether.webp',
+      '/products/teething-ring-collection.webp',
+    ],
+    'koala-textured-teething-ring': [
+      '/products/blue-textured-bone-teether.webp',
+      '/products/sensory-teether-collection.webp',
+      '/products/sensory-stacking-toy-set.webp',
+    ],
+    'silicone-foldable-tub': [
+      '/products/bath-toy-collection.webp',
+      '/products/baby-feeding-set.webp',
+      '/products/silicone-bib-bowl-set.webp',
+    ],
+  };
+  const related = relatedImagesBySlug[String(product?.slug || '').toLowerCase()] || [];
+
+  return Array.from(new Set([main, ...extra, ...related]));
 }
