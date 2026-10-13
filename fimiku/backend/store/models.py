@@ -1,3 +1,4 @@
+
 from django.db import models
 
 
@@ -20,18 +21,18 @@ class Product(models.Model):
     category = models.ForeignKey(
         Category,
         related_name="products",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True)
     description = models.TextField()
     features = models.JSONField(
         default=list,
-        help_text="List of feature bullet points"
+        help_text="List of feature bullet points",
     )
     material = models.CharField(
         max_length=150,
-        default="100% Food-Grade Silicone (BPA, PVC, Phthalate Free)"
+        default="100% Food-Grade Silicone (BPA, PVC, Phthalate Free)",
     )
     target_age = models.CharField(max_length=50, default="3m+")
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -39,7 +40,7 @@ class Product(models.Model):
         max_digits=10,
         decimal_places=2,
         null=True,
-        blank=True
+        blank=True,
     )
     stock = models.PositiveIntegerField(default=50)
     sku = models.CharField(max_length=60, unique=True)
@@ -68,8 +69,8 @@ class Product(models.Model):
         reviews = self.reviews.all()
         if reviews.exists():
             return round(
-                sum(r.rating for r in reviews) / reviews.count(),
-                1
+                sum(review.rating for review in reviews) / reviews.count(),
+                1,
             )
         return 5.0
 
@@ -79,7 +80,7 @@ class Cart(models.Model):
         max_length=100,
         null=True,
         blank=True,
-        unique=True
+        unique=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -92,11 +93,11 @@ class CartItem(models.Model):
     cart = models.ForeignKey(
         Cart,
         related_name="items",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
         Product,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     quantity = models.PositiveIntegerField(default=1)
 
@@ -112,12 +113,12 @@ class Wishlist(models.Model):
         max_length=100,
         null=True,
         blank=True,
-        unique=True
+        unique=True,
     )
     products = models.ManyToManyField(
         Product,
         related_name="wishlisted_by",
-        blank=True
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -128,20 +129,20 @@ class Wishlist(models.Model):
 class Coupon(models.Model):
     DISCOUNT_TYPES = (
         ("PERCENTAGE", "Percentage Discount"),
-        ("FIXED", "Fixed Amount Discount"),
+        ("FIXED", "Fixed Amount"),
     )
 
     code = models.CharField(max_length=50, unique=True)
     discount_type = models.CharField(
         max_length=20,
         choices=DISCOUNT_TYPES,
-        default="PERCENTAGE"
+        default="PERCENTAGE",
     )
     value = models.DecimalField(max_digits=10, decimal_places=2)
     min_order_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=0,
     )
     is_active = models.BooleanField(default=True)
 
@@ -168,56 +169,85 @@ class Order(models.Model):
 
     total_amount = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
     )
     discount_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=0.00
+        default=0.00,
     )
 
+    # Existing Razorpay fields — preserved
     razorpay_order_id = models.CharField(
         max_length=100,
         blank=True,
-        null=True
+        null=True,
     )
     razorpay_payment_id = models.CharField(
         max_length=100,
         blank=True,
-        null=True
+        null=True,
+    )
+
+    # Shiprocket shipment and tracking fields
+    shiprocket_order_id = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    shiprocket_shipment_id = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    shiprocket_awb_code = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    shiprocket_courier_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    tracking_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
     )
 
     payment_status = models.CharField(
         max_length=50,
-        default="INITIATED"
+        default="INITIATED",
     )
-
     order_status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="PENDING"
+        default="PENDING",
     )
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Order #{self.id} - {self.full_name} (₹{self.total_amount})"
+        return (
+            f"Order #{self.id} - {self.full_name} "
+            f"(₹{self.total_amount})"
+        )
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
         related_name="items",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
     product_name = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -231,10 +261,10 @@ class Review(models.Model):
     product = models.ForeignKey(
         Product,
         related_name="reviews",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     rating = models.IntegerField(
-        choices=[(i, i) for i in range(1, 6)]
+        choices=[(i, i) for i in range(1, 6)],
     )
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

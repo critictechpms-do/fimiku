@@ -26,6 +26,7 @@ export interface ProductType {
   is_featured?: boolean;
   reviews_count?: number;
   average_rating?: number;
+  reviews?: Array<{ rating: number; comment?: string; created_at?: string }>;
 }
 
 export interface CartItemType {

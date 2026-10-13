@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -8,8 +9,15 @@ import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "Fimiku | Safe & Soft Food-Grade Silicone Baby Essentials",
-  description: "Direct manufacturer of 100% food-grade platinum silicone baby products. Teething toys, self-feeding plates, sensory play, and baby essentials.",
-  keywords: ["baby silicone", "food grade silicone teether", "baby feeding suction plate", "Fimiku baby brand", "safe baby products India"],
+  description:
+    "Direct manufacturer of 100% food-grade platinum silicone baby products. Teething toys, self-feeding plates, sensory play, and baby essentials.",
+  keywords: [
+    "baby silicone",
+    "food grade silicone teether",
+    "baby feeding suction plate",
+    "Fimiku baby brand",
+    "safe baby products India",
+  ],
   icons: {
     icon: "/logo-icon.png",
     apple: "/logo-icon.png",
@@ -30,14 +38,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-[#fdfcfe] text-fimiku-darkText min-h-screen flex flex-col antialiased relative selection:bg-fimiku-lightPurple/30">
+      <body className="min-h-screen flex flex-col antialiased">
         <AuthProvider>
           <CartProvider>
-            <div className="relative z-10 flex flex-col min-h-screen">
+            <div className="relative flex min-h-screen w-full flex-col">
               <Navbar />
+
               <main className="flex-1 pb-16 md:pb-0">
                 {children}
               </main>
+
               <Footer />
               <MobileBottomNav />
             </div>

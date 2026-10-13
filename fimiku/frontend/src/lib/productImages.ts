@@ -1,12 +1,45 @@
+/**
+ * Product image helpers for Fimiku.
+ *
+ * Gallery order:
+ * 1. The exact product image selected below (or the backend's image_url).
+ * 2. Product-specific images supplied by the API, such as additional_images,
+ *    gallery_images, images, or image_urls.
+ *
+ * We deliberately do not add photos of other products as filler. Add 3–4 real
+ * image URLs for each product in the backend's `additional_images` field (or
+ * one of the supported gallery fields) to populate the slider.
+ */
+
+function cleanImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const url = value.trim();
+  return url.length > 0 ? url : null;
+}
+
+function extractImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item: unknown) => {
+      if (typeof item === 'string') return cleanImageUrl(item);
+      if (item && typeof item === 'object') {
+        const image = item as Record<string, unknown>;
+        return cleanImageUrl(
+          image.image_url ?? image.image ?? image.url ?? image.src
+        );
+      }
+      return null;
+    })
+    .filter((url): url is string => Boolean(url));
+}
+
 export function getProductImage(product: any): string {
   const slug = String(product?.slug || '').toLowerCase().trim();
   const sku = String(product?.sku || '').toUpperCase().trim();
 
-  // Exact product → exact uploaded image
-  if (
-    slug === 'pastel-silicone-stacking-tower' ||
-    sku === 'FIM-SEN-01'
-  ) {
+  // Exact product → exact uploaded image.
+  if (slug === 'pastel-silicone-stacking-tower' || sku === 'FIM-SEN-01') {
     return '/products/sensory-stacking-toy-set.webp';
   }
 
@@ -34,37 +67,25 @@ export function getProductImage(product: any): string {
     return '/products/blue-textured-bone-teether.webp';
   }
 
-  // IMPORTANT:
-  // For products without an exact matching uploaded photo,
-  // keep the backend image instead of showing the wrong product photo.
-  return product?.image_url || '/products/sensory-teether-collection.webp';
+  // For products without a mapped local image, preserve the backend image.
+  return (
+    cleanImageUrl(product?.image_url) ||
+    cleanImageUrl(product?.image) ||
+    '/products/sensory-teether-collection.webp'
+  );
 }
 
 export function getProductGallery(product: any): string[] {
   const main = getProductImage(product);
 
-  const extra = Array.isArray(product?.additional_images)
-    ? product.additional_images.filter(Boolean)
-    : [];
+  // Accept the common image-gallery fields used by APIs/CMS systems.
+  const extraImages = [
+    ...extractImageUrls(product?.additional_images),
+    ...extractImageUrls(product?.gallery_images),
+    ...extractImageUrls(product?.image_urls),
+    ...extractImageUrls(product?.images),
+  ];
 
-  const relatedImagesBySlug: Record<string, string[]> = {
-    'pastel-silicone-stacking-tower': [
-      '/products/sensory-teether-collection.webp',
-      '/products/blue-textured-bone-teether.webp',
-      '/products/teething-ring-collection.webp',
-    ],
-    'koala-textured-teething-ring': [
-      '/products/blue-textured-bone-teether.webp',
-      '/products/sensory-teether-collection.webp',
-      '/products/sensory-stacking-toy-set.webp',
-    ],
-    'silicone-foldable-tub': [
-      '/products/bath-toy-collection.webp',
-      '/products/baby-feeding-set.webp',
-      '/products/silicone-bib-bowl-set.webp',
-    ],
-  };
-  const related = relatedImagesBySlug[String(product?.slug || '').toLowerCase()] || [];
-
-  return Array.from(new Set([main, ...extra, ...related]));
+  // Keep the exact main image first, remove duplicates, and limit to 4 photos.
+  return Array.from(new Set([main, ...extraImages])).slice(0, 4);
 }
