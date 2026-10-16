@@ -142,7 +142,7 @@ export default function HomePage() {
           <div className="relative min-h-[270px] md:min-h-[390px] lg:min-h-[450px]">
             <picture className="absolute inset-0">
               <source media="(min-width: 768px)" srcSet={img('hero-baby.png')} />
-              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-right" />
+              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-center md:object-right" />
             </picture>
             <div className="absolute inset-y-0 left-0 hidden w-[22%] bg-[#f7f1ff] md:block" />
             <div className="absolute inset-y-0 left-[22%] hidden w-[28%] bg-gradient-to-r from-[#f7f1ff] to-transparent md:block" />
@@ -282,47 +282,13 @@ export default function HomePage() {
       </section>
 
       {/* Silicone vs plastic comparison */}
-      <section className="bg-[#faf6ff] px-3 py-10 sm:px-5 sm:py-12">
-        <div className="mx-auto max-w-[1180px]">
-          <div className="mb-7 text-center">
-            <h2 className="text-2xl font-bold text-[#252044] sm:text-3xl">Silicone vs. Plastic</h2>
-            <p className="mt-2 text-sm text-[#8b8297]">A considered comparison for everyday essentials.</p>
+      <section className="bg-[#faf6ff] py-10 sm:py-12">
+        <div className="mx-auto max-w-[1180px] px-3 sm:px-5">
+          <div className="mb-6 text-center">
+            <h2 className="text-xl font-bold">Silicone vs. Plastic</h2>
+            <p className="mt-1 text-[11px] text-[#8b8297]">A considered comparison for everyday essentials.</p>
           </div>
-
-          <div className="mx-auto mb-8 max-w-4xl overflow-hidden rounded-2xl border border-[#eadff8] bg-white shadow-sm">
-           <img
-  src="/images/fimiku/silicone-vs-plastic.webp"
-  alt="Silicone and plastic baby feeding products comparison"
-  className="mx-auto mb-8 block h-auto w-full max-w-[850px] rounded-xl border border-[#eadff8]"
-/>
-          </div>
-
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-[#eadff8] bg-white shadow-sm">
-            <div className="grid grid-cols-3 bg-[#f1e8fc] text-xs font-bold text-[#342553] sm:text-base">
-              <div className="p-3 sm:p-5">Feature</div>
-              <div className="p-3 sm:p-5">Fimiku Silicone</div>
-              <div className="p-3 sm:p-5">Traditional Plastic</div>
-            </div>
-            {[
-              { feature: 'Texture', silicone: 'Soft and flexible', plastic: 'Usually rigid' },
-              { feature: 'Everyday feel', silicone: 'Smooth, flexible finish', plastic: 'Often a harder surface' },
-              { feature: 'Durability', silicone: 'Flexible and resistant to shattering', plastic: 'May crack depending on material' },
-              { feature: 'Cleaning', silicone: 'Easy to clean as directed', plastic: 'Easy to clean as directed' },
-              { feature: 'Design', silicone: 'Soft, modern pastel colors', plastic: 'Available in many colors and finishes' },
-            ].map((item) => (
-              <div key={item.feature} className="grid grid-cols-3 border-t border-[#eee6f5] text-[11px] leading-5 text-[#514963] sm:text-sm">
-                <div className="p-3 font-semibold sm:p-5">{item.feature}</div>
-                <div className="p-3 sm:p-5">{item.silicone}</div>
-                <div className="p-3 sm:p-5">{item.plastic}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-7 text-center">
-            <p className="text-lg font-semibold text-[#342553]">Small choices. Thoughtfully made.</p>
-            <p className="mt-2 text-sm text-[#8b8297]">Choose everyday essentials designed around your family&apos;s needs.</p>
-          </div>
-          <p className="mx-auto mt-4 max-w-3xl text-center text-[10px] leading-4 text-[#8b8297]">Material performance varies by product. Always follow the manufacturer&apos;s care and use instructions.</p>
+          <img src={img('silicone-vs-plastic.jpg')} alt="Comparison of premium silicone and traditional plastic" className="mx-auto block h-auto w-full max-w-[850px] rounded-xl" loading="lazy" />
         </div>
       </section>
 
