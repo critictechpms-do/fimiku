@@ -113,10 +113,30 @@ class ProductListView(generics.ListAPIView):
             'sort'
         )
         if category:
-            queryset = queryset.filter(
-                Q(category__slug=category) |
-                Q(category__name__iexact=category)
-            )
+            # Frontend category aliases -> actual catalog category names/slugs.
+            category_aliases = {
+                'teethers': ('Teething Toys', 'teething-toys'),
+                'teething': ('Teething Toys', 'teething-toys'),
+                'teething-toys': ('Teething Toys', 'teething-toys'),
+                'bath': ('Bath Toys', 'bath-toys'),
+                'bath-toys': ('Bath Toys', 'bath-toys'),
+                'feeding': ('Feeding Accessories', 'feeding-accessories'),
+                'feeding-accessories': ('Feeding Accessories', 'feeding-accessories'),
+                'sensory': ('Sensory Learning', 'sensory-learning'),
+                'sensory-learning': ('Sensory Learning', 'sensory-learning'),
+            }
+            alias = category_aliases.get(category.lower())
+            if alias:
+                category_name, category_slug = alias
+                queryset = queryset.filter(
+                    Q(category__slug__iexact=category_slug) |
+                    Q(category__name__iexact=category_name)
+                )
+            else:
+                queryset = queryset.filter(
+                    Q(category__slug__iexact=category) |
+                    Q(category__name__iexact=category)
+                )
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
@@ -140,6 +160,28 @@ class ProductListView(generics.ListAPIView):
                 '-created_at'
             )
         return queryset
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Keep only one catalog entry per SKU.
+        unique_products = []
+        seen_skus = set()
+
+        for product in queryset:
+            sku = product.sku
+            if sku not in seen_skus:
+                seen_skus.add(sku)
+                unique_products.append(product)
+
+        page = self.paginate_queryset(unique_products)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(unique_products, many=True)
+        return Response(serializer.data)
+    
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.filter(
         is_active=True
