@@ -32,6 +32,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   const [quantity, setQuantity] = useState(1);
 
+  const [bagAnimating, setBagAnimating] = useState(false);
+
+  const [buyTransition, setBuyTransition] = useState(false);
+
   const [reviewRating, setReviewRating] = useState(5);
 
   const [reviewComment, setReviewComment] = useState('');
@@ -80,11 +84,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   const handleAddToCart = async () => {
 
-    if (!product) return;
+    if (!product || bagAnimating) return;
 
-    await addToCart(product, quantity);
+    setBagAnimating(true);
 
-    showToast(`🛍️ Added ${quantity} item(s) to bag`);
+    try {
+      await addToCart(product, quantity);
+      showToast(`🛍️ Added ${quantity} item(s) to bag`);
+    } finally {
+      window.setTimeout(() => setBagAnimating(false), 600);
+    }
 
   };
 
@@ -92,11 +101,17 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   const handleBuyNow = async () => {
 
-    if (!product) return;
+    if (!product || buyTransition) return;
 
-    await addToCart(product, quantity);
+    setBuyTransition(true);
 
-    router.push('/checkout');
+    try {
+      await addToCart(product, quantity);
+      window.setTimeout(() => router.push('/checkout'), 520);
+    } catch (error) {
+      setBuyTransition(false);
+      console.error('Could not start checkout:', error);
+    }
 
   };
 
@@ -207,6 +222,23 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
 
   return (
+
+    <div>
+      {(bagAnimating || buyTransition) && (
+        <div className={`fimiku-purchase-transition ${buyTransition ? 'is-buying' : ''}`} aria-hidden="true">
+          <div className="fimiku-purchase-bag"><ShoppingBag size={42} strokeWidth={1.8} /></div>
+        </div>
+      )}
+      <style jsx global>{`
+        .fimiku-purchase-transition { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(247,241,255,.94); animation: fimiku-purchase-fade 160ms ease-out both; pointer-events: none; }
+        .fimiku-purchase-bag { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 9999px; color: #fff; background: #8b55f6; box-shadow: 0 0 0 0 rgba(139,85,246,.3); animation: fimiku-purchase-grow 560ms cubic-bezier(.2,.8,.2,1) both; }
+        .fimiku-purchase-transition.is-buying .fimiku-purchase-bag { animation-duration: 520ms; }
+        .fimiku-bag-icon-bounce { animation: fimiku-icon-bounce 560ms cubic-bezier(.2,.8,.2,1); }
+        @keyframes fimiku-icon-bounce { 0%,100% { transform: scale(1) rotate(0); } 35% { transform: scale(1.35) rotate(-8deg); } 65% { transform: scale(.9) rotate(5deg); } }
+        @keyframes fimiku-purchase-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fimiku-purchase-grow { 0% { transform: scale(.4) rotate(-12deg); opacity: .35; box-shadow: 0 0 0 0 rgba(139,85,246,.3); } 52% { transform: scale(1.22) rotate(4deg); opacity: 1; box-shadow: 0 0 0 20px rgba(139,85,246,.1); } 100% { transform: scale(1.65); opacity: 0; box-shadow: 0 0 0 40px rgba(139,85,246,0); } }
+        @media (prefers-reduced-motion: reduce) { .fimiku-purchase-transition, .fimiku-purchase-bag { animation-duration: 1ms !important; } }
+      `}</style>
 
     <div className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 py-8 space-y-12 pb-36 md:pb-24 bg-fimiku-softLavender">
 
@@ -544,7 +576,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
               >
 
-                <ShoppingBag className="w-4 h-4 text-fimiku-cta" /> Add to Bag
+                <ShoppingBag className={`w-4 h-4 text-fimiku-cta ${bagAnimating ? 'fimiku-bag-icon-bounce' : ''}`} /> Add to Bag
 
               </button>
 
@@ -752,7 +784,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
           >
 
-            <ShoppingBag className="w-3.5 h-3.5" />
+            <ShoppingBag className={`w-3.5 h-3.5 ${bagAnimating ? 'fimiku-bag-icon-bounce' : ''}`} />
 
             <span>Add to Bag</span>
 
@@ -764,6 +796,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
 
 
+    </div>
     </div>
 
   );
