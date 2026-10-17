@@ -142,7 +142,7 @@ export default function HomePage() {
           <div className="relative min-h-[270px] md:min-h-[390px] lg:min-h-[450px]">
             <picture className="absolute inset-0">
               <source media="(min-width: 768px)" srcSet={img('hero-baby.png')} />
-              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-center md:object-right" />
+              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-[65%_center]" />
             </picture>
             <div className="absolute inset-y-0 left-0 hidden w-[22%] bg-[#f7f1ff] md:block" />
             <div className="absolute inset-y-0 left-[22%] hidden w-[28%] bg-gradient-to-r from-[#f7f1ff] to-transparent md:block" />
