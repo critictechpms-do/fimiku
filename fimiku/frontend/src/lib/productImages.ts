@@ -1,7 +1,7 @@
 
 /**
  * Fimiku product image mappings.
- * Local files are stored inside frontend/public/products/.
+ * Local images are stored in frontend/public/products/.
  */
 
 function cleanImageUrl(value: unknown): string | null {
@@ -31,23 +31,23 @@ function extractImageUrls(value: unknown): string[] {
 
 const LOCAL_GALLERIES: Record<string, string[]> = {
   basket: [
-    '/products/01_silicone_foldable_basket/image1.png',
+    '/products/01_silicone_foldable_basket/image4.jpeg',
     '/products/01_silicone_foldable_basket/image2.jpeg',
     '/products/01_silicone_foldable_basket/image3.jpeg',
-    '/products/01_silicone_foldable_basket/image4.jpeg',
+    '/products/01_silicone_foldable_basket/image1.png',
   ],
 
   petFeeder: [
+    '/products/02_pet_slow_feeder_bowl_3in1/image8.jpeg',
     '/products/02_pet_slow_feeder_bowl_3in1/image5.png',
     '/products/02_pet_slow_feeder_bowl_3in1/image6.png',
     '/products/02_pet_slow_feeder_bowl_3in1/image7.png',
-    '/products/02_pet_slow_feeder_bowl_3in1/image8.jpeg',
   ],
 
   kitchenMat: [
+    '/products/03_silicone_kitchen_mat/image14.jpeg',
     '/products/03_silicone_kitchen_mat/image12.png',
     '/products/03_silicone_kitchen_mat/image13.png',
-    '/products/03_silicone_kitchen_mat/image14.jpeg',
     '/products/03_silicone_kitchen_mat/image15.jpeg',
   ],
 };
@@ -87,6 +87,7 @@ export function getProductImage(product: any): string {
   const sku = String(product?.sku ?? '').toUpperCase().trim();
   const text = `${slug} ${name}`;
 
+  // Sensory stacking tower
   if (
     slug === 'pastel-silicone-stacking-tower' ||
     sku === 'FIM-SEN-01' ||
@@ -95,22 +96,40 @@ export function getProductImage(product: any): string {
     return '/products/sensory-stacking-toy-set.webp';
   }
 
-  if (slug === 'sensory-teether-collection' || text.includes('sensory teether')) {
+  // Sensory teether collection
+  if (
+    slug === 'sensory-teether-collection' ||
+    text.includes('sensory teether')
+  ) {
     return '/products/sensory-teether-collection.webp';
   }
 
-  if (slug === 'silicone-baby-feeding-set' || text.includes('baby feeding set')) {
+  // Baby feeding set
+  if (
+    slug === 'silicone-baby-feeding-set' ||
+    text.includes('baby feeding set')
+  ) {
     return '/products/baby-feeding-set.webp';
   }
 
-  if (slug === 'bath-toy-collection' || text.includes('bath toy')) {
+  // Bath toy collection
+  if (
+    slug === 'bath-toy-collection' ||
+    text.includes('bath toy') ||
+    text.includes('foldable tub')
+  ) {
     return '/products/bath-toy-collection.webp';
   }
 
-  if (slug === 'silicone-bib-bowl-set' || text.includes('bib bowl')) {
+  // Bib and bowl set
+  if (
+    slug === 'silicone-bib-bowl-set' ||
+    text.includes('bib bowl')
+  ) {
     return '/products/silicone-bib-bowl-set.webp';
   }
 
+  // Teething rings
   if (
     slug === 'teething-ring-collection' ||
     text.includes('koala') ||
@@ -119,6 +138,7 @@ export function getProductImage(product: any): string {
     return '/products/teething-ring-collection.webp';
   }
 
+  // Textured teether
   if (
     slug === 'textured-baby-teething-toy' ||
     text.includes('bone teether') ||
@@ -127,6 +147,7 @@ export function getProductImage(product: any): string {
     return '/products/blue-textured-bone-teether.webp';
   }
 
+  // API image fallback
   return (
     cleanImageUrl(product?.image_url) ||
     cleanImageUrl(product?.image) ||
@@ -135,10 +156,11 @@ export function getProductImage(product: any): string {
 }
 
 export function getProductGallery(product: any): string[] {
-  // Always use the four local files for the three mapped products.
+  // Return the four mapped local images for these products.
   const localGallery = getLocalGallery(product);
   if (localGallery) return localGallery;
 
+  // Preserve API galleries for other products.
   const main = getProductImage(product);
 
   const extraImages = [
