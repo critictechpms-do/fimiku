@@ -2,8 +2,9 @@
 /**
  * Product image helpers for Fimiku.
  *
- * Uses local product images where a matching product is found.
- * Supports additional product-specific images from the API gallery fields.
+ * Returns four local images for the basket, pet feeder, and kitchen mat.
+ * For other products, uses the main image and any extra gallery images
+ * supplied by the API.
  */
 
 function cleanImageUrl(value: unknown): string | null {
@@ -26,10 +27,7 @@ function extractImageUrls(value: unknown): string[] {
         const image = item as Record<string, unknown>;
 
         return cleanImageUrl(
-          image.image_url ??
-            image.image ??
-            image.url ??
-            image.src
+          image.image_url ?? image.image ?? image.url ?? image.src
         );
       }
 
@@ -38,43 +36,56 @@ function extractImageUrls(value: unknown): string[] {
     .filter((url): url is string => Boolean(url));
 }
 
-export function getProductImage(product: any): string {
-  const slug = String(product?.slug || '')
-    .toLowerCase()
-    .trim();
-
-  const name = String(product?.name || '')
-    .toLowerCase()
-    .trim();
-
-  const sku = String(product?.sku || '')
-    .toUpperCase()
-    .trim();
-
-  const text = `${slug} ${name}`;
-
-  // 1. Foldable silicone basket
+function getLocalGallery(text: string): string[] | null {
+  // Foldable silicone basket
   if (
     text.includes('foldable basket') ||
     text.includes('silicone foldable basket')
   ) {
-    return '/products/01_silicone_foldable_basket/image1.png';
+    return [
+      '/products/01_silicone_foldable_basket/image1.png',
+      '/products/01_silicone_foldable_basket/image2.jpeg',
+      '/products/01_silicone_foldable_basket/image3.jpeg',
+      '/products/01_silicone_foldable_basket/image4.jpeg',
+    ];
   }
 
-  // 2. Three-in-one pet slow feeder bowl
+  // Three-in-one pet slow feeder bowl
   if (
     text.includes('slow feeder') ||
     text.includes('pet feeder')
   ) {
-    return '/products/02_pet_slow_feeder_bowl_3in1/image5.png';
+    return [
+      '/products/02_pet_slow_feeder_bowl_3in1/image5.png',
+      '/products/02_pet_slow_feeder_bowl_3in1/image6.png',
+      '/products/02_pet_slow_feeder_bowl_3in1/image7.png',
+      '/products/02_pet_slow_feeder_bowl_3in1/image8.jpeg',
+    ];
   }
 
-  // 3. Silicone kitchen mat
+  // Silicone kitchen mat
   if (text.includes('kitchen mat')) {
-    return '/products/03_silicone_kitchen_mat/image12.png';
+    return [
+      '/products/03_silicone_kitchen_mat/image12.png',
+      '/products/03_silicone_kitchen_mat/image13.png',
+      '/products/03_silicone_kitchen_mat/image14.jpeg',
+      '/products/03_silicone_kitchen_mat/image15.jpeg',
+    ];
   }
 
-  // 4. Sensory stacking tower
+  return null;
+}
+
+export function getProductImage(product: any): string {
+  const slug = String(product?.slug || '').toLowerCase().trim();
+  const name = String(product?.name || '').toLowerCase().trim();
+  const sku = String(product?.sku || '').toUpperCase().trim();
+  const text = `${slug} ${name}`;
+
+  // Use the first local gallery image for these products.
+  const localGallery = getLocalGallery(text);
+  if (localGallery) return localGallery[0];
+
   if (
     slug === 'pastel-silicone-stacking-tower' ||
     sku === 'FIM-SEN-01' ||
@@ -83,7 +94,6 @@ export function getProductImage(product: any): string {
     return '/products/sensory-stacking-toy-set.webp';
   }
 
-  // 5. Sensory teether collection
   if (
     slug === 'sensory-teether-collection' ||
     text.includes('sensory teether')
@@ -91,7 +101,6 @@ export function getProductImage(product: any): string {
     return '/products/sensory-teether-collection.webp';
   }
 
-  // 6. Silicone baby feeding set
   if (
     slug === 'silicone-baby-feeding-set' ||
     text.includes('silicone baby feeding set')
@@ -99,7 +108,6 @@ export function getProductImage(product: any): string {
     return '/products/baby-feeding-set.webp';
   }
 
-  // 7. Bath toy collection / foldable bath tub
   if (
     slug === 'bath-toy-collection' ||
     text.includes('foldable tub') ||
@@ -108,7 +116,6 @@ export function getProductImage(product: any): string {
     return '/products/bath-toy-collection.webp';
   }
 
-  // 8. Silicone bib and bowl set
   if (
     slug === 'silicone-bib-bowl-set' ||
     text.includes('bib bowl')
@@ -116,7 +123,6 @@ export function getProductImage(product: any): string {
     return '/products/silicone-bib-bowl-set.webp';
   }
 
-  // 9. Teething rings / koala teether
   if (
     slug === 'teething-ring-collection' ||
     text.includes('koala') ||
@@ -126,7 +132,6 @@ export function getProductImage(product: any): string {
     return '/products/teething-ring-collection.webp';
   }
 
-  // 10. Textured baby teething toy
   if (
     slug === 'textured-baby-teething-toy' ||
     text.includes('bone teether') ||
@@ -135,15 +140,12 @@ export function getProductImage(product: any): string {
     return '/products/blue-textured-bone-teether.webp';
   }
 
-  // Category-based fallback mappings
   const category = String(
     product?.category_slug ??
       product?.category?.slug ??
       product?.category ??
       ''
-  )
-    .toLowerCase()
-    .trim();
+  ).toLowerCase().trim();
 
   if (category === 'bath') {
     return '/products/bath-toy-collection.webp';
@@ -169,7 +171,6 @@ export function getProductImage(product: any): string {
     return '/products/sensory-teether-collection.webp';
   }
 
-  // Use the image supplied by the API if no local mapping matches.
   return (
     cleanImageUrl(product?.image_url) ||
     cleanImageUrl(product?.image) ||
@@ -178,6 +179,14 @@ export function getProductImage(product: any): string {
 }
 
 export function getProductGallery(product: any): string[] {
+  const slug = String(product?.slug || '').toLowerCase().trim();
+  const name = String(product?.name || '').toLowerCase().trim();
+  const text = `${slug} ${name}`;
+
+  // Always use four known local images for these three products.
+  const localGallery = getLocalGallery(text);
+  if (localGallery) return localGallery;
+
   const main = getProductImage(product);
 
   const extraImages = [
@@ -187,6 +196,5 @@ export function getProductGallery(product: any): string[] {
     ...extractImageUrls(product?.images),
   ];
 
-  // Keep the main image first and remove duplicate URLs.
   return Array.from(new Set([main, ...extraImages])).slice(0, 4);
 }
