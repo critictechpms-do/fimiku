@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
@@ -18,6 +19,9 @@ export const metadata: Metadata = {
     "Fimiku baby brand",
     "safe baby products India",
   ],
+  verification: {
+    google: "Isl8kDLoHL4E2P829PW6_9jmluoXsWKrhJcP8WznV6w",
+  },
   icons: {
     icon: "/logo-icon.png",
     apple: "/logo-icon.png",
