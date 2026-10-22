@@ -1,6 +1,3 @@
-// Fimiku product image mapping.
-// The API currently contains older Unsplash image URLs, so the frontend
-// uses the uploaded product photos for the matching catalog items.
 
 const LOCAL_IMAGES = {
   blueTeether: '/products/blue-textured-bone-teether.webp',
@@ -10,6 +7,9 @@ const LOCAL_IMAGES = {
   bibBowl: '/products/silicone-bib-bowl-set.webp',
   teethingRing: '/products/teething-ring-collection.webp',
   stacking: '/products/sensory-stacking-toy-set.webp',
+  basket: '/products/01_silicone_foldable_basket/image1.png',
+  petFeeder: '/products/02_pet_slow_feeder_bowl_3in1/image1.png',
+  kitchenMat: '/products/03_silicone_kitchen_mat/image1.png',
 } as const;
 
 export function getProductImage(product: any): string {
@@ -18,38 +18,54 @@ export function getProductImage(product: any): string {
   const text = `${slug} ${name}`;
   const category = String(product?.category_slug ?? '').toLowerCase();
 
-  // Exact catalog matches first so duplicated seeded products stay consistent.
-  if (slug.includes('silicone-baby-feeding-set') || text.includes('silicone baby feeding set')) {
+  // Match specific products before generic category rules.
+  if (text.includes('foldable basket') || text.includes('silicone-foldable-basket')) {
+    return LOCAL_IMAGES.basket;
+  }
+
+  if (text.includes('slow feeder') || text.includes('pet feeder')) {
+    return LOCAL_IMAGES.petFeeder;
+  }
+
+  if (text.includes('kitchen mat')) {
+    return LOCAL_IMAGES.kitchenMat;
+  }
+
+  if (text.includes('silicone baby feeding set')) {
     return LOCAL_IMAGES.babyFeeding;
   }
-  if (slug.includes('silicone-foldable-tub') || text.includes('foldable tub')) {
+
+  if (text.includes('foldable tub')) {
     return LOCAL_IMAGES.bath;
   }
-  if (slug.includes('koala-textured-teething-ring') || text.includes('koala') || text.includes('textured teething ring')) {
+
+  if (text.includes('koala') || text.includes('textured teething ring')) {
     return LOCAL_IMAGES.teethingRing;
   }
-  if (slug.includes('pastel-silicone-stacking-tower') || text.includes('stacking tower') || text.includes('stacking')) {
+
+  if (text.includes('stacking tower') || text.includes('stacking')) {
     return LOCAL_IMAGES.stacking;
   }
+
   if (text.includes('sensory teether') || text.includes('sensory teeth')) {
     return LOCAL_IMAGES.sensoryTeether;
   }
+
   if (text.includes('teething ring')) {
     return LOCAL_IMAGES.teethingRing;
   }
+
   if (text.includes('bone teether') || text.includes('teether')) {
     return LOCAL_IMAGES.blueTeether;
   }
 
-  // Category-level fallback for the remaining catalog entries.
   if (category === 'bath') return LOCAL_IMAGES.bath;
   if (category === 'feeding') return LOCAL_IMAGES.babyFeeding;
   if (category === 'sensory') return LOCAL_IMAGES.sensoryTeether;
   if (category === 'teethers') return LOCAL_IMAGES.blueTeether;
-  if (category === 'kitchen') return LOCAL_IMAGES.bibBowl;
+  if (category === 'kitchen') return LOCAL_IMAGES.kitchenMat;
   if (category === 'baby-play') return LOCAL_IMAGES.sensoryTeether;
 
-  // Keep the backend image as a final fallback for products without a local match.
   return product?.image_url || LOCAL_IMAGES.sensoryTeether;
 }
 
