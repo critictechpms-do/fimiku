@@ -22,10 +22,11 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { getProductGallery } from '@/lib/productImages';
 
-// Only use the two remaining feeding-set images.
-// The deleted beige image is intentionally excluded.
+// Keep the feeding-set gallery separate from every other product gallery.
+// These filenames match the images in frontend/public/products/.
 const FEEDING_SET_IMAGES = [
   '/products/baby-feeding-set.webp',
+  '/products/baby-feeding-set-beige.webp',
   '/products/baby-feeding-set-purple.webp',
 ];
 
@@ -239,7 +240,7 @@ export default function ProductDetailPage({
               </div>
             )}
 
-            {isFeedingSet && safeGallery.length > 1 && (
+            {safeGallery.length > 1 && (
               <>
                 <button
                   type="button"
@@ -280,7 +281,7 @@ export default function ProductDetailPage({
               </>
             )}
 
-            {isFeedingSet && (
+            {safeGallery.length > 1 && (
               <span className="absolute top-4 left-4 bg-white/90 text-fimiku-darkText text-[10px] font-semibold px-3 py-1.5 rounded-full shadow-sm">
                 {safeGallery.length > 0
                   ? `${activeImage + 1} / ${safeGallery.length}`
@@ -309,7 +310,7 @@ export default function ProductDetailPage({
           </div>
 
           {/* Thumbnails use the same list as the main image. */}
-          {isFeedingSet && safeGallery.length > 0 && (
+          {safeGallery.length > 1 && (
             <div
               className={`grid gap-3 ${
                 safeGallery.length === 1
