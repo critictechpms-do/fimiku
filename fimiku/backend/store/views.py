@@ -1290,3 +1290,4 @@ class AdminStatsView(views.APIView):
                     list(low_stock)
             }
         )
+

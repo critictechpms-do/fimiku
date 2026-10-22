@@ -1,0 +1,33 @@
+
+import os
+import requests
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+email = os.getenv("SHIPROCKET_EMAIL")
+password = os.getenv("SHIPROCKET_PASSWORD")
+
+if not email or not password:
+    print("ERROR: Shiprocket credentials are missing.")
+    raise SystemExit(1)
+
+url = "https://apiv2.shiprocket.in/v1/external/auth/login"
+
+try:
+    response = requests.post(
+        url,
+        json={"email": email, "password": password},
+        timeout=20
+    )
+
+    if response.status_code == 200 and response.json().get("token"):
+        print("SUCCESS! Shiprocket API connected.")
+    else:
+        print("Connection failed.")
+        print("HTTP status:", response.status_code)
+        print("Check your API email and password.")
+
+except requests.RequestException as error:
+    print("Connection error:", type(error).__name__)

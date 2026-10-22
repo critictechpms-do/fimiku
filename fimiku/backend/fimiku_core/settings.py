@@ -19,9 +19,9 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
+    'fimiku_core.apps.MongoAdminConfig',
+    'fimiku_core.apps.MongoAuthConfig',
+    'fimiku_core.apps.MongoContentTypesConfig',
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
@@ -177,3 +177,7 @@ CORS_ALLOW_HEADERS = [
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+
+# Shiprocket API Configuration
+SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
+SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
