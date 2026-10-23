@@ -1,4 +1,3 @@
-
 /**
  * Fimiku product image helpers.
  * Images are served from frontend/public/products/.
@@ -64,12 +63,12 @@ const LOCAL_GALLERIES: Record<string, string[]> = {
     '/products/bath-toy-collection.webp',
   ],
 
-  // Pet Teether: existing blue bone image plus separate gallery views.
+  // Pet Teether: existing blue bone image and additional views.
+  // Only use image files that currently exist.
   petTeether: [
     '/products/blue-textured-bone-teether.webp',
     '/products/pet-teether-main.jpg',
     '/products/pet-teether-angle.jpg',
-    '/products/pet-teether-texture.jpg',
     '/products/pet-teether-lifestyle.jpg',
   ],
 
@@ -77,7 +76,6 @@ const LOCAL_GALLERIES: Record<string, string[]> = {
   babyTeether: [
     '/products/baby-teether-main.jpg',
     '/products/baby-teether-angle.jpg',
-    '/products/baby-teether-texture.jpg',
     '/products/baby-teether-lifestyle.jpg',
   ],
 };
@@ -208,7 +206,8 @@ export function getProductGallery(product: any): string[] {
   const gallery = getLocalGallery(product);
 
   if (gallery !== null) {
-    return [...new Set(gallery)].slice(0, 5);
+    // Array.from avoids the Set spread TypeScript build error.
+    return Array.from(new Set(gallery)).slice(0, 5);
   }
 
   const mainImage = getProductImage(product);
