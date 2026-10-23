@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -78,6 +77,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     id: 22 as any,
     name: 'Pet Teether',
     slug: 'pet-teether',
+    sku: 'PGT-01E',
     price: '549.00',
     image_url: '/products/blue-textured-bone-teether.webp',
     category_name: 'Pet Toys',
@@ -92,6 +92,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     id: 23 as any,
     name: 'Baby Teether',
     slug: 'catalog-baby-teether',
+    sku: 'BGT-01F',
     price: '549.00',
     image_url: '/products/baby-teether-main.jpg',
     category_name: 'Teething Toys',
@@ -113,18 +114,58 @@ const CATEGORIES: [string, string][] = [
   ['Kitchen Silicone', 'kitchen'],
 ];
 
+function normalize(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function getProductKey(product: any): string {
+  const sku = normalize(product?.sku);
+  if (sku) return `sku:${sku}`;
+
+  const slug = normalize(product?.slug);
+  if (slug) return `slug:${slug}`;
+
+  const name = normalize(product?.name).replace(/[^a-z0-9]/g, '');
+  return name ? `name:${name}` : `id:${String(product?.id ?? '')}`;
+}
+
+/**
+ * Remove duplicates by SKU, slug, or product name.
+ * API records take priority over fallback records.
+ */
+function uniqueProducts(
+  liveProducts: ProductType[],
+  fallbackProducts: ProductType[]
+): ProductType[] {
+  const map = new Map<string, ProductType>();
+
+  // Add fallback products first.
+  for (const product of fallbackProducts) {
+    map.set(getProductKey(product), product);
+  }
+
+  // Real API products replace matching fallback entries.
+  for (const product of liveProducts) {
+    map.set(getProductKey(product), product);
+  }
+
+  return Array.from(map.values());
+}
+
 function match(product: any, category: string, query: string): boolean {
-  const name = String(product?.name ?? '').toLowerCase();
-  const categoryName = String(
-    product?.category_name ?? product?.category?.name ?? ''
-  ).toLowerCase();
-  const slug = String(
-    product?.category_slug ?? product?.category?.slug ?? ''
-  ).toLowerCase();
+  const name = normalize(product?.name);
+  const categoryName = normalize(
+    product?.category_name ?? product?.category?.name
+  );
+  const categorySlug = normalize(
+    product?.category_slug ?? product?.category?.slug
+  );
+  const slug = normalize(product?.slug);
+  const sku = normalize(product?.sku);
 
   if (query.trim()) {
-    const searchable = `${name} ${categoryName} ${slug}`;
-    if (!searchable.includes(query.trim().toLowerCase())) return false;
+    const searchable = `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
+    if (!searchable.includes(normalize(query))) return false;
   }
 
   if (!category) return true;
@@ -133,24 +174,47 @@ function match(product: any, category: string, query: string): boolean {
     teethers: ['teether', 'teething'],
     bath: ['bath'],
     feeding: ['feeding'],
-    sensory: ['sensory'],
-    'baby-play': ['baby play', 'play'],
+    sensory: ['sensory', 'stacking'],
+    'baby-play': ['baby play', 'play', 'baby'],
     kitchen: ['kitchen', 'mat'],
   };
 
-  const categoryText = `${categoryName} ${slug} ${name}`;
+  const searchable = `${name} ${categoryName} ${categorySlug} ${slug}`;
+
   return (aliases[category] ?? [category]).some(alias =>
-    categoryText.includes(alias)
+    searchable.includes(alias)
   );
+}
+
+function sortProducts(items: ProductType[], sort: string): ProductType[] {
+  const result = [...items];
+
+  const getPrice = (product: any) =>
+    Number(
+      product?.final_price ??
+        product?.discount_price ??
+        product?.price ??
+        0
+    );
+
+  if (sort === 'price_low') {
+    result.sort((a, b) => getPrice(a) - getPrice(b));
+  } else if (sort === 'price_high') {
+    result.sort((a, b) => getPrice(b) - getPrice(a));
+  }
+
+  return result;
 }
 
 function ShopContent() {
   const sp = useSearchParams();
+
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState(sp.get('category') || '');
   const [search, setSearch] = useState(sp.get('search') || '');
   const [sort, setSort] = useState('');
+
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
 
   useEffect(() => {
@@ -169,60 +233,32 @@ function ShopContent() {
         const raw = response.data?.results ?? response.data;
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
-        // Keep real API records as the source of truth.
-        // Merge only missing fallback IDs, avoiding duplicate cards.
-        const byId = new Map<string, ProductType>();
+        /*
+         * If the API returns products, use those records only.
+         * Do not append fallback records to the live catalog.
+         * This prevents fallback cards from repeating real products.
+         */
+        const source =
+          live.length > 0
+            ? uniqueProducts(live, [])
+            : uniqueProducts([], FALLBACK_PRODUCTS);
 
-        for (const product of live) {
-          byId.set(String(product.id), product);
-        }
-
-        for (const fallback of FALLBACK_PRODUCTS) {
-          if (!byId.has(String(fallback.id))) {
-            byId.set(String(fallback.id), fallback);
-          }
-        }
-
-        let result = Array.from(byId.values()).filter(product =>
+        const filtered = source.filter(product =>
           match(product, cat, search)
         );
 
-        if (sort === 'price_low') {
-          result.sort(
-            (a: any, b: any) =>
-              Number(a.final_price ?? a.discount_price ?? a.price ?? 0) -
-              Number(b.final_price ?? b.discount_price ?? b.price ?? 0)
-          );
-        } else if (sort === 'price_high') {
-          result.sort(
-            (a: any, b: any) =>
-              Number(b.final_price ?? b.discount_price ?? b.price ?? 0) -
-              Number(a.final_price ?? a.discount_price ?? a.price ?? 0)
-          );
+        if (!cancelled) {
+          setProducts(sortProducts(filtered, sort));
         }
-
-        if (!cancelled) setProducts(result);
       } catch (error) {
         console.error('Failed to load products:', error);
 
+        const filtered = uniqueProducts([], FALLBACK_PRODUCTS).filter(
+          product => match(product, cat, search)
+        );
+
         if (!cancelled) {
-          let result = FALLBACK_PRODUCTS.filter(product =>
-            match(product, cat, search)
-          );
-
-          if (sort === 'price_low') {
-            result.sort((a: any, b: any) =>
-              Number(a.final_price ?? a.discount_price ?? a.price ?? 0) -
-              Number(b.final_price ?? b.discount_price ?? b.price ?? 0)
-            );
-          } else if (sort === 'price_high') {
-            result.sort((a: any, b: any) =>
-              Number(b.final_price ?? b.discount_price ?? b.price ?? 0) -
-              Number(a.final_price ?? a.discount_price ?? a.price ?? 0)
-            );
-          }
-
-          setProducts(result);
+          setProducts(sortProducts(filtered, sort));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -244,9 +280,11 @@ function ShopContent() {
             <span className="text-xs uppercase tracking-wider text-fimiku-cta font-bold">
               100% Food-Grade Silicone
             </span>
+
             <h1 className="text-3xl font-bold text-fimiku-darkText mt-1">
               Baby &amp; Child Essentials
             </h1>
+
             <p className="text-sm text-fimiku-secondaryText">
               Safe toys, feeding essentials and sensory play.
             </p>
@@ -255,6 +293,7 @@ function ShopContent() {
           <div className="flex gap-3">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-fimiku-grayText" />
+
               <input
                 value={search}
                 onChange={event => setSearch(event.target.value)}
@@ -279,7 +318,9 @@ function ShopContent() {
           <button
             onClick={() => setCat('')}
             className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${
-              !cat ? 'bg-fimiku-cta text-white' : 'bg-fimiku-softLavender border'
+              !cat
+                ? 'bg-fimiku-cta text-white'
+                : 'bg-fimiku-softLavender border'
             }`}
           >
             All Toys ({products.length})
@@ -306,6 +347,7 @@ function ShopContent() {
       ) : products.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-3xl">
           <p className="font-bold">No products found</p>
+
           <button
             onClick={() => {
               setCat('');
@@ -327,7 +369,7 @@ function ShopContent() {
 
             return (
               <div
-                key={String(product.id)}
+                key={getProductKey(product)}
                 className="bg-white rounded-3xl p-4 border shadow-sm"
               >
                 <Link href={`/product/${product.id}`}>
@@ -338,6 +380,7 @@ function ShopContent() {
                       className="w-full h-full object-cover hover:scale-105 transition"
                     />
                   </div>
+
                   <h3 className="font-bold text-sm mt-3 text-fimiku-darkText">
                     {product.name}
                   </h3>
@@ -347,12 +390,14 @@ function ShopContent() {
                   {[0, 1, 2, 3, 4].map(index => (
                     <Star key={index} className="w-3 h-3 fill-current" />
                   ))}
+
                   <span className="text-[10px] text-gray-400">5.0</span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t">
                   <div>
                     <b>₹{price}</b>
+
                     {product.discount_price &&
                       Number(product.price) >
                         Number(product.discount_price) && (
