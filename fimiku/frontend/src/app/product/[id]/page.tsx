@@ -1,5 +1,4 @@
-
-'use client';
+ 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -28,9 +27,52 @@ const FEEDING_SET_IMAGES = [
   '/products/baby-feeding-set-purple.webp',
 ];
 
+// Frontend fallback details for the two teether products.
+// The IDs must match the IDs used by the shop fallback cards.
+const LOCAL_TEETHER_PRODUCTS: Record<string, any> = {
+  '22': {
+    id: 22,
+    name: 'Pet Teether',
+    slug: 'pet-teether',
+    sku: 'PGT-01E',
+    price: '549.00',
+    discount_price: null,
+    image_url: '/products/blue-textured-bone-teether.webp',
+    description: 'Bone-shaped textured pet teether.',
+    material: 'Silicone',
+    target_age: 'Pets',
+    stock: 0,
+    is_in_stock: false,
+    category: { name: 'Pet Toys' },
+    features: ['Bone-shaped design', 'Textured surface'],
+    reviews: [],
+    reviews_count: 0,
+    average_rating: 5,
+  },
+  '23': {
+    id: 23,
+    name: 'Baby Teether',
+    slug: 'catalog-baby-teether',
+    sku: 'BGT-01F',
+    price: '549.00',
+    discount_price: null,
+    image_url: '/products/baby-teether-main.jpg',
+    description: 'Star-shaped baby teether.',
+    material: 'Silicone',
+    target_age: 'Babies',
+    stock: 0,
+    is_in_stock: false,
+    category: { name: 'Teething Toys' },
+    features: ['Star-shaped design', 'Textured surface'],
+    reviews: [],
+    reviews_count: 0,
+    average_rating: 5,
+  },
+};
+
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
-  const productId = params?.id ?? '';
+  const productId = String(params?.id ?? '');
   const router = useRouter();
 
   const [product, setProduct] = useState<any>(null);
@@ -47,6 +89,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!productId) {
+      setProduct(null);
       setLoading(false);
       return;
     }
@@ -65,8 +108,10 @@ export default function ProductDetailPage() {
       } catch (error) {
         console.error('Failed to load product details:', error);
 
+        // Show local teether details if the API does not have these IDs.
+        // Other products still require a valid backend record.
         if (mounted) {
-          setProduct(null);
+          setProduct(LOCAL_TEETHER_PRODUCTS[productId] ?? null);
         }
       } finally {
         if (mounted) {
@@ -101,12 +146,13 @@ export default function ProductDetailPage() {
     : [];
 
   const safeGallery = galleryImages.filter(
-    (image) => !failedGalleryImages.includes(image)
+    image => !failedGalleryImages.includes(image)
   );
 
   useEffect(() => {
     setActiveImage(0);
     setFailedGalleryImages([]);
+    setQuantity(1);
   }, [product?.id]);
 
   useEffect(() => {
@@ -116,7 +162,7 @@ export default function ProductDetailPage() {
   }, [activeImage, safeGallery.length]);
 
   const handleGalleryImageError = (imageUrl: string) => {
-    setFailedGalleryImages((current) =>
+    setFailedGalleryImages(current =>
       current.includes(imageUrl) ? current : [...current, imageUrl]
     );
   };
@@ -125,18 +171,26 @@ export default function ProductDetailPage() {
     if (safeGallery.length < 2) return;
 
     setActiveImage(
-      (current) => (current - 1 + safeGallery.length) % safeGallery.length
+      current => (current - 1 + safeGallery.length) % safeGallery.length
     );
   };
 
   const showNextImage = () => {
     if (safeGallery.length < 2) return;
 
-    setActiveImage((current) => (current + 1) % safeGallery.length);
+    setActiveImage(current => (current + 1) % safeGallery.length);
   };
 
   const handleAddToCart = async () => {
     if (!product) return;
+
+    // Local fallback products are not guaranteed to exist in the backend.
+    if (product.__localFallback || LOCAL_TEETHER_PRODUCTS[productId]) {
+      showToast(
+        '⚠️ This product needs to be added to the store database before checkout.'
+      );
+      return;
+    }
 
     await addToCart(product, quantity);
     showToast(`🛍️ Added ${quantity} item(s) to bag`);
@@ -144,6 +198,13 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     if (!product) return;
+
+    if (product.__localFallback || LOCAL_TEETHER_PRODUCTS[productId]) {
+      showToast(
+        '⚠️ This product needs to be added to the store database before checkout.'
+      );
+      return;
+    }
 
     await addToCart(product, quantity);
     router.push('/checkout');
@@ -156,6 +217,13 @@ export default function ProductDetailPage() {
 
     if (!isAuthenticated) {
       showToast('⚠️ Please sign in to write a product review.');
+      return;
+    }
+
+    if (LOCAL_TEETHER_PRODUCTS[productId]) {
+      showToast(
+        '⚠️ This product needs a backend record before reviews can be submitted.'
+      );
       return;
     }
 
@@ -307,7 +375,7 @@ export default function ProductDetailPage() {
             </span>
           </div>
 
-          {/* Small, narrow horizontal thumbnail cards */}
+          {/* Product image thumbnails */}
           {safeGallery.length > 1 && (
             <div className="flex flex-row items-start gap-2 overflow-x-auto max-w-full pb-1">
               {safeGallery.map((image, index) => (
@@ -339,7 +407,9 @@ export default function ProductDetailPage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <span className="text-xs font-bold text-fimiku-cta uppercase tracking-wider">
-              {product.category?.name || '100% Food-Grade Silicone'}
+              {product.category?.name ||
+                product.category_name ||
+                '100% Food-Grade Silicone'}
             </span>
 
             <h1 className="text-2xl sm:text-3xl font-bold text-fimiku-darkText">
@@ -365,7 +435,7 @@ export default function ProductDetailPage() {
               </span>
 
               <span className="text-xs text-fimiku-grayText">
-                ({product.reviews_count || product.reviews?.length || 1} parent reviews)
+                ({product.reviews_count || product.reviews?.length || 0} parent reviews)
               </span>
             </div>
           </div>
@@ -429,7 +499,7 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setQuantity((current) => Math.max(1, current - 1))
+                    setQuantity(current => Math.max(1, current - 1))
                   }
                   aria-label="Decrease quantity"
                   className="p-1 text-fimiku-grayText hover:text-fimiku-darkText"
@@ -444,7 +514,7 @@ export default function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setQuantity((current) =>
+                    setQuantity(current =>
                       Math.min(product.stock || 99, current + 1)
                     )
                   }
@@ -546,7 +616,7 @@ export default function ProductDetailPage() {
             <span className="text-xs text-fimiku-secondaryText">Rating:</span>
 
             <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5].map(star => (
                 <button
                   key={star}
                   type="button"
@@ -565,7 +635,7 @@ export default function ProductDetailPage() {
           <textarea
             rows={3}
             value={reviewComment}
-            onChange={(event) => setReviewComment(event.target.value)}
+            onChange={event => setReviewComment(event.target.value)}
             placeholder="Share how this product helped your little one..."
             className="w-full p-3.5 text-xs bg-fimiku-softLavender border border-fimiku-lightBorder rounded-2xl focus:outline-none focus:border-fimiku-primary text-fimiku-darkText resize-none"
           />
