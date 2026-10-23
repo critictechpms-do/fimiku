@@ -221,8 +221,8 @@ export default function ProductDetailPage({
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
         {/* Product gallery */}
-        <div className="mx-auto w-full max-w-[780px] space-y-3">
-          <div className="relative aspect-[4/3] max-h-[520px] rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
+        <div className="space-y-4">
+          <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
               <img
                 key={currentImage}
@@ -312,8 +312,10 @@ export default function ProductDetailPage({
           {/* Thumbnails use the same list as the main image. */}
           {safeGallery.length > 1 && (
             <div
-              className={`grid max-w-[620px] grid-cols-2 gap-3 ${
-                safeGallery.length === 1 ? 'grid-cols-1' : ''
+              className={`grid gap-3 ${
+                safeGallery.length === 1
+                  ? 'grid-cols-1'
+                  : 'grid-cols-2'
               }`}
             >
               {safeGallery.map((image, index) => (
@@ -322,7 +324,7 @@ export default function ProductDetailPage({
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`aspect-[4/3] max-h-40 rounded-xl bg-white overflow-hidden border-2 transition ${
+                  className={`h-[180px] sm:h-[190px] rounded-xl bg-white overflow-hidden border-2 transition flex items-center justify-center ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -331,7 +333,7 @@ export default function ProductDetailPage({
                   <img
                     src={image}
                     alt={`${product.name} thumbnail ${index + 1}`}
-                    className="w-full h-full object-contain p-4"
+                    className="w-[72%] h-[72%] object-contain"
                     onError={() => handleGalleryImageError(image)}
                   />
                 </button>
