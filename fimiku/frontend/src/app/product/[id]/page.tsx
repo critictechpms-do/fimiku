@@ -108,6 +108,7 @@ export default function ProductDetailPage({
 
   const showPreviousImage = () => {
     if (safeGallery.length < 2) return;
+
     setActiveImage(
       (current) => (current - 1 + safeGallery.length) % safeGallery.length
     );
@@ -115,17 +116,20 @@ export default function ProductDetailPage({
 
   const showNextImage = () => {
     if (safeGallery.length < 2) return;
+
     setActiveImage((current) => (current + 1) % safeGallery.length);
   };
 
   const handleAddToCart = async () => {
     if (!product) return;
+
     await addToCart(product, quantity);
     showToast(`🛍️ Added ${quantity} item(s) to bag`);
   };
 
   const handleBuyNow = async () => {
     if (!product) return;
+
     await addToCart(product, quantity);
     router.push('/checkout');
   };
@@ -203,7 +207,7 @@ export default function ProductDetailPage({
       </Link>
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
-        {/* Main product image gallery */}
+        {/* Main product gallery */}
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
@@ -211,7 +215,7 @@ export default function ProductDetailPage({
                 key={currentImage}
                 src={currentImage}
                 alt={`${product.name} image ${activeImage + 1}`}
-                className="absolute left-1/2 top-1/2 !h-[30%] !w-[30%] !max-h-none !max-w-none -translate-x-1/2 -translate-y-1/2 object-contain p-0 transition-opacity duration-300"
+                className="absolute inset-0 h-full w-full object-contain p-8 transition-opacity duration-300"
                 onError={() => handleGalleryImageError(currentImage)}
               />
             ) : (
@@ -288,7 +292,7 @@ export default function ProductDetailPage({
             </span>
           </div>
 
-          {/* Compact thumbnail boxes: 160px high */}
+          {/* Smaller thumbnail cards with correctly sized images */}
           {safeGallery.length > 1 && (
             <div className="grid grid-cols-2 gap-3">
               {safeGallery.map((image, index) => (
@@ -297,7 +301,7 @@ export default function ProductDetailPage({
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`flex h-40 items-center justify-center overflow-hidden rounded-xl border-2 bg-white transition ${
+                  className={`flex h-36 items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-3 transition ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -306,7 +310,7 @@ export default function ProductDetailPage({
                   <img
                     src={image}
                     alt={`${product.name} thumbnail ${index + 1}`}
-                    className="h-[30%] w-[30%] shrink-0 object-contain p-0"
+                    className="h-full w-full object-contain"
                     onError={() => handleGalleryImageError(image)}
                   />
                 </button>
@@ -398,7 +402,6 @@ export default function ProductDetailPage({
             )}
           </div>
 
-          {/* Quantity and purchase buttons */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4">
               <span className="text-xs font-semibold text-fimiku-darkText">
@@ -408,7 +411,9 @@ export default function ProductDetailPage({
               <div className="flex items-center border border-fimiku-lightBorder rounded-full bg-white px-2 py-1">
                 <button
                   type="button"
-                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                  onClick={() =>
+                    setQuantity((current) => Math.max(1, current - 1))
+                  }
                   aria-label="Decrease quantity"
                   className="p-1 text-fimiku-grayText hover:text-fimiku-darkText"
                 >
@@ -558,7 +563,7 @@ export default function ProductDetailPage({
         </form>
       </div>
 
-      {/* Mobile bottom purchase bar */}
+      {/* Mobile purchase bar */}
       <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-fimiku-lightBorder p-3 px-4 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 animate-fade-in">
         <div>
           <div className="text-sm font-bold text-fimiku-darkText">
