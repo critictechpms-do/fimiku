@@ -116,10 +116,10 @@ function normalize(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
-/**
- * Deduplicate products using SKU, slug, or name.
- * ProductType does not require a SKU property.
- */
+function normalizeName(value: unknown): string {
+  return normalize(value).replace(/[^a-z0-9]/g, '');
+}
+
 function getProductKey(product: any): string {
   const sku = normalize(product?.sku);
   if (sku) return `sku:${sku}`;
@@ -127,26 +127,77 @@ function getProductKey(product: any): string {
   const slug = normalize(product?.slug);
   if (slug) return `slug:${slug}`;
 
-  const name = normalize(product?.name).replace(/[^a-z0-9]/g, '');
+  const name = normalizeName(product?.name);
   if (name) return `name:${name}`;
 
   return `id:${String(product?.id ?? '')}`;
 }
 
-function deduplicateProducts(items: ProductType[]): ProductType[] {
-  const map = new Map<string, ProductType>();
+/**
+ * Merge fallback and live products without showing duplicates.
+ * Fallbacks are inserted first; live API records replace matching fallbacks.
+ * ProductType does not require a SKU property.
+ */
+function mergeAndDeduplicateProducts(
+  fallbackProducts: ProductType[],
+  liveProducts: ProductType[]
+): ProductType[] {
+  const result: ProductType[] = [];
 
-  for (const product of items) {
-    const key = getProductKey(product);
-    if (!key || key === 'id:') continue;
+  const matchesExisting = (candidate: any, existing: any): boolean => {
+    const candidateSku = normalize(candidate?.sku);
+    const existingSku = normalize(existing?.sku);
 
-    // Keep only one entry for each product key.
-    if (!map.has(key)) {
-      map.set(key, product);
+    if (candidateSku && existingSku && candidateSku === existingSku) {
+      return true;
+    }
+
+    const candidateSlug = normalize(candidate?.slug);
+    const existingSlug = normalize(existing?.slug);
+
+    if (candidateSlug && existingSlug && candidateSlug === existingSlug) {
+      return true;
+    }
+
+    const candidateName = normalizeName(candidate?.name);
+    const existingName = normalizeName(existing?.name);
+
+    if (candidateName && existingName && candidateName === existingName) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Add fallbacks first, then let live records replace matching products.
+  for (const product of [...fallbackProducts, ...liveProducts]) {
+    const existingIndex = result.findIndex(existing =>
+      matchesExisting(product, existing)
+    );
+
+    if (existingIndex === -1) {
+      result.push(product);
+    } else {
+      const isLiveProduct = liveProducts.includes(product);
+
+      if (isLiveProduct) {
+        result[existingIndex] = product;
+      }
     }
   }
 
-  return Array.from(map.values());
+  // Final safeguard against duplicate keys.
+  const seenKeys = new Set<string>();
+
+  return result.filter(product => {
+    const key = getProductKey(product);
+
+    if (!key || key === 'id:') return false;
+    if (seenKeys.has(key)) return false;
+
+    seenKeys.add(key);
+    return true;
+  });
 }
 
 function match(product: any, category: string, query: string): boolean {
@@ -162,6 +213,7 @@ function match(product: any, category: string, query: string): boolean {
 
   if (query.trim()) {
     const searchable = `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
+
     if (!searchable.includes(normalize(query))) return false;
   }
 
@@ -230,16 +282,11 @@ function ShopContent() {
         const raw = response.data?.results ?? response.data;
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
-        /*
-         * Use live API products whenever available.
-         * Fall back only when the API returns no products.
-         * This avoids mixing fallback cards into the live catalog.
-         */
-        const source = deduplicateProducts(
-          live.length > 0 ? live : FALLBACK_PRODUCTS
-        );
+        // Keep all live products and restore fallback products missing from API.
+        // Matching records appear only once, with live API data taking priority.
+        const merged = mergeAndDeduplicateProducts(FALLBACK_PRODUCTS, live);
 
-        const filtered = source.filter(product =>
+        const filtered = merged.filter(product =>
           match(product, cat, search)
         );
 
@@ -249,9 +296,10 @@ function ShopContent() {
       } catch (error) {
         console.error('Failed to load products:', error);
 
-        const fallback = deduplicateProducts(FALLBACK_PRODUCTS).filter(
-          product => match(product, cat, search)
-        );
+        const fallback = mergeAndDeduplicateProducts(
+          FALLBACK_PRODUCTS,
+          []
+        ).filter(product => match(product, cat, search));
 
         if (!cancelled) {
           setProducts(sortProducts(fallback, sort));
