@@ -46,7 +46,10 @@ export default function ProductDetailPage() {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!productId) return;
+    if (!productId) {
+      setLoading(false);
+      return;
+    }
 
     let mounted = true;
 
@@ -219,8 +222,8 @@ export default function ProductDetailPage() {
       </Link>
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
-        {/* Main product image */}
-        <div className="space-y-4">
+        {/* Main product gallery */}
+        <div className="space-y-3">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
               <img
@@ -304,16 +307,17 @@ export default function ProductDetailPage() {
             </span>
           </div>
 
-          {/* Compact thumbnail boxes */}
+          {/* Small, narrow horizontal thumbnail cards */}
           {safeGallery.length > 1 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-row items-start gap-2 overflow-x-auto max-w-full pb-1">
               {safeGallery.map((image, index) => (
                 <button
                   key={image}
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`flex h-28 min-h-0 items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-2 transition ${
+                  aria-pressed={activeImage === index}
+                  className={`flex h-20 w-16 min-w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 bg-white p-1 transition ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -322,7 +326,7 @@ export default function ProductDetailPage() {
                   <img
                     src={image}
                     alt={`${product.name} thumbnail ${index + 1}`}
-                    className="block max-h-full max-w-full object-contain"
+                    className="block h-full w-full object-contain"
                     onError={() => handleGalleryImageError(image)}
                   />
                 </button>
@@ -414,7 +418,7 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Quantity selector */}
+          {/* Quantity and purchase buttons */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4">
               <span className="text-xs font-semibold text-fimiku-darkText">
@@ -424,7 +428,9 @@ export default function ProductDetailPage() {
               <div className="flex items-center border border-fimiku-lightBorder rounded-full bg-white px-2 py-1">
                 <button
                   type="button"
-                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                  onClick={() =>
+                    setQuantity((current) => Math.max(1, current - 1))
+                  }
                   aria-label="Decrease quantity"
                   className="p-1 text-fimiku-grayText hover:text-fimiku-darkText"
                 >
