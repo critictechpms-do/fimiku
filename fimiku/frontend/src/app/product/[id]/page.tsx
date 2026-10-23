@@ -50,16 +50,16 @@ export default function ProductDetailPage({
   useEffect(() => {
     let mounted = true;
 
-    const fetchProduct = async () => {
+    async function fetchProduct() {
       try {
-        const res = await api.get(`/products/${params.id}/`);
-        if (mounted) setProduct(res.data);
+        const response = await api.get(`/products/${params.id}/`);
+        if (mounted) setProduct(response.data);
       } catch (error) {
-        console.error('Failed to load product detail:', error);
+        console.error('Failed to load product details:', error);
       } finally {
         if (mounted) setLoading(false);
       }
-    };
+    }
 
     fetchProduct();
 
@@ -94,7 +94,9 @@ export default function ProductDetailPage({
   }, [product?.id]);
 
   useEffect(() => {
-    if (activeImage >= safeGallery.length) setActiveImage(0);
+    if (activeImage >= safeGallery.length) {
+      setActiveImage(0);
+    }
   }, [activeImage, safeGallery.length]);
 
   const handleGalleryImageError = (imageUrl: string) => {
@@ -130,6 +132,7 @@ export default function ProductDetailPage({
 
   const handleReviewSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!reviewComment.trim()) return;
 
     if (!isAuthenticated) {
@@ -149,8 +152,8 @@ export default function ProductDetailPage({
       showToast('⭐ Thank you for your review!');
       setReviewComment('');
 
-      const res = await api.get(`/products/${params.id}/`);
-      setProduct(res.data);
+      const response = await api.get(`/products/${params.id}/`);
+      setProduct(response.data);
     } catch {
       showToast('⚠️ Could not submit review. Please try again.');
     } finally {
@@ -172,9 +175,11 @@ export default function ProductDetailPage({
         <h2 className="text-2xl font-bold text-fimiku-darkText">
           Product Not Found
         </h2>
+
         <p className="text-xs text-fimiku-secondaryText">
           The product you are looking for might have moved.
         </p>
+
         <Link
           href="/shop"
           className="inline-block px-6 py-2.5 bg-fimiku-cta text-white text-xs font-semibold rounded-full"
@@ -198,7 +203,7 @@ export default function ProductDetailPage({
       </Link>
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
-        {/* Main product image */}
+        {/* Main product image gallery */}
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
@@ -283,7 +288,7 @@ export default function ProductDetailPage({
             </span>
           </div>
 
-          {/* Thumbnail images: 30% size */}
+          {/* Compact thumbnail boxes: 160px high */}
           {safeGallery.length > 1 && (
             <div className="grid grid-cols-2 gap-3">
               {safeGallery.map((image, index) => (
@@ -292,7 +297,7 @@ export default function ProductDetailPage({
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`flex aspect-square items-center justify-center overflow-hidden rounded-xl border-2 bg-white transition ${
+                  className={`flex h-40 items-center justify-center overflow-hidden rounded-xl border-2 bg-white transition ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -393,6 +398,7 @@ export default function ProductDetailPage({
             )}
           </div>
 
+          {/* Quantity and purchase buttons */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4">
               <span className="text-xs font-semibold text-fimiku-darkText">
@@ -466,7 +472,7 @@ export default function ProductDetailPage({
         </div>
       </div>
 
-      {/* Reviews */}
+      {/* Parent reviews */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-fimiku-lightBorder shadow-sm space-y-8">
         <div className="space-y-1">
           <h2 className="text-xl sm:text-2xl font-bold text-fimiku-darkText">
@@ -552,7 +558,7 @@ export default function ProductDetailPage({
         </form>
       </div>
 
-      {/* Mobile purchase bar */}
+      {/* Mobile bottom purchase bar */}
       <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-fimiku-lightBorder p-3 px-4 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 animate-fade-in">
         <div>
           <div className="text-sm font-bold text-fimiku-darkText">
