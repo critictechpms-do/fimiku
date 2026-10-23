@@ -22,8 +22,6 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { getProductGallery } from '@/lib/productImages';
 
-// Keep the feeding-set gallery separate from every other product gallery.
-// These filenames match the images in frontend/public/products/.
 const FEEDING_SET_IMAGES = [
   '/products/baby-feeding-set.webp',
   '/products/baby-feeding-set-beige.webp',
@@ -56,15 +54,11 @@ export default function ProductDetailPage({
       try {
         const res = await api.get(`/products/${params.id}/`);
 
-        if (mounted) {
-          setProduct(res.data);
-        }
+        if (mounted) setProduct(res.data);
       } catch (error) {
         console.error('Failed to load product detail:', error);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
@@ -75,13 +69,8 @@ export default function ProductDetailPage({
     };
   }, [params.id]);
 
-  const productName = String(product?.name || '')
-    .trim()
-    .toLowerCase();
-
-  const productSlug = String(product?.slug || '')
-    .trim()
-    .toLowerCase();
+  const productName = String(product?.name || '').trim().toLowerCase();
+  const productSlug = String(product?.slug || '').trim().toLowerCase();
 
   const isFeedingSet =
     (productName.includes('baby') &&
@@ -96,7 +85,6 @@ export default function ProductDetailPage({
           typeof image === 'string' && image.trim().length > 0
       );
 
-  // Hide any image that fails to load so it cannot leave a broken slide.
   const safeGallery = galleryImages.filter(
     (image) => !failedGalleryImages.includes(image)
   );
@@ -107,9 +95,7 @@ export default function ProductDetailPage({
   }, [product?.id]);
 
   useEffect(() => {
-    if (activeImage >= safeGallery.length) {
-      setActiveImage(0);
-    }
+    if (activeImage >= safeGallery.length) setActiveImage(0);
   }, [activeImage, safeGallery.length]);
 
   const handleGalleryImageError = (imageUrl: string) => {
@@ -121,7 +107,6 @@ export default function ProductDetailPage({
 
   const showPreviousImage = () => {
     if (safeGallery.length < 2) return;
-
     setActiveImage(
       (current) => (current - 1 + safeGallery.length) % safeGallery.length
     );
@@ -129,27 +114,23 @@ export default function ProductDetailPage({
 
   const showNextImage = () => {
     if (safeGallery.length < 2) return;
-
     setActiveImage((current) => (current + 1) % safeGallery.length);
   };
 
   const handleAddToCart = async () => {
     if (!product) return;
-
     await addToCart(product, quantity);
     showToast(`🛍️ Added ${quantity} item(s) to bag`);
   };
 
   const handleBuyNow = async () => {
     if (!product) return;
-
     await addToCart(product, quantity);
     router.push('/checkout');
   };
 
   const handleReviewSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     if (!reviewComment.trim()) return;
 
     if (!isAuthenticated) {
@@ -192,11 +173,9 @@ export default function ProductDetailPage({
         <h2 className="text-2xl font-bold text-fimiku-darkText">
           Product Not Found
         </h2>
-
         <p className="text-xs text-fimiku-secondaryText">
           The product you are looking for might have moved.
         </p>
-
         <Link
           href="/shop"
           className="inline-block px-6 py-2.5 bg-fimiku-cta text-white text-xs font-semibold rounded-full"
@@ -220,7 +199,7 @@ export default function ProductDetailPage({
       </Link>
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
-        {/* Product gallery */}
+        {/* Main product gallery */}
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
@@ -228,7 +207,7 @@ export default function ProductDetailPage({
                 key={currentImage}
                 src={currentImage}
                 alt={`${product.name} image ${activeImage + 1}`}
-                className="w-full h-full object-contain p-8 transition-opacity duration-300"
+                className="mx-auto h-full w-full max-h-[82%] max-w-[82%] object-contain p-6 transition-opacity duration-300"
                 onError={() => handleGalleryImageError(currentImage)}
               />
             ) : (
@@ -267,9 +246,7 @@ export default function ProductDetailPage({
                       type="button"
                       onClick={() => setActiveImage(index)}
                       aria-label={`Show image ${index + 1}`}
-                      aria-current={
-                        activeImage === index ? 'true' : undefined
-                      }
+                      aria-current={activeImage === index ? 'true' : undefined}
                       className={`h-2 rounded-full transition-all ${
                         activeImage === index
                           ? 'w-6 bg-fimiku-cta'
@@ -283,9 +260,7 @@ export default function ProductDetailPage({
 
             {safeGallery.length > 1 && (
               <span className="absolute top-4 left-4 bg-white/90 text-fimiku-darkText text-[10px] font-semibold px-3 py-1.5 rounded-full shadow-sm">
-                {safeGallery.length > 0
-                  ? `${activeImage + 1} / ${safeGallery.length}`
-                  : 'No images'}
+                {activeImage + 1} / {safeGallery.length}
               </span>
             )}
 
@@ -309,22 +284,16 @@ export default function ProductDetailPage({
             </span>
           </div>
 
-          {/* Thumbnails use the same list as the main image. */}
+          {/* Smaller thumbnail images */}
           {safeGallery.length > 1 && (
-            <div
-              className={`grid gap-3 ${
-                safeGallery.length === 1
-                  ? 'grid-cols-1'
-                  : 'grid-cols-2'
-              }`}
-            >
+            <div className="grid grid-cols-2 gap-3">
               {safeGallery.map((image, index) => (
                 <button
                   key={image}
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`h-[180px] sm:h-[190px] rounded-xl bg-white overflow-hidden border-2 transition flex items-center justify-center ${
+                  className={`aspect-square rounded-xl bg-white overflow-hidden border-2 transition ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -333,7 +302,7 @@ export default function ProductDetailPage({
                   <img
                     src={image}
                     alt={`${product.name} thumbnail ${index + 1}`}
-                    className="w-[72%] h-[72%] object-contain"
+                    className="mx-auto h-full w-full max-h-[72%] max-w-[72%] object-contain p-2"
                     onError={() => handleGalleryImageError(image)}
                   />
                 </button>
@@ -348,7 +317,6 @@ export default function ProductDetailPage({
             <span className="text-xs font-bold text-fimiku-cta uppercase tracking-wider">
               {product.category?.name || '100% Food-Grade Silicone'}
             </span>
-
             <h1 className="text-2xl sm:text-3xl font-bold text-fimiku-darkText">
               {product.name}
             </h1>
@@ -366,11 +334,9 @@ export default function ProductDetailPage({
                   />
                 ))}
               </div>
-
               <span className="text-xs font-semibold text-fimiku-darkText">
                 {product.average_rating || 5.0}
               </span>
-
               <span className="text-xs text-fimiku-grayText">
                 ({product.reviews_count || product.reviews?.length || 1} parent
                 reviews)
@@ -388,11 +354,9 @@ export default function ProductDetailPage({
                 <span className="text-sm text-fimiku-grayText line-through">
                   ₹{product.price}
                 </span>
-
                 <span className="text-xs bg-fimiku-veryLightLavender text-fimiku-cta border border-fimiku-lightPurple/40 font-bold px-2.5 py-0.5 rounded-full">
                   Save ₹
-                  {Number(product.price) -
-                    Number(product.discount_price)}
+                  {Number(product.price) - Number(product.discount_price)}
                 </span>
               </>
             )}
@@ -406,7 +370,6 @@ export default function ProductDetailPage({
             <h3 className="text-xs font-bold text-fimiku-darkText uppercase tracking-wide">
               Product Highlights
             </h3>
-
             <p className="text-xs text-fimiku-secondaryText font-medium">
               🌿 <strong>Material:</strong>{' '}
               {product.material || '100% Food-Grade Platinum Silicone'}
@@ -414,17 +377,15 @@ export default function ProductDetailPage({
 
             {product.features && product.features.length > 0 && (
               <ul className="space-y-1.5 pt-1">
-                {product.features.map(
-                  (feature: string, index: number) => (
-                    <li
-                      key={index}
-                      className="flex items-center gap-2 text-xs text-fimiku-secondaryText"
-                    >
-                      <Check className="w-3.5 h-3.5 text-fimiku-cta flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  )
-                )}
+                {product.features.map((feature: string, index: number) => (
+                  <li
+                    key={index}
+                    className="flex items-center gap-2 text-xs text-fimiku-secondaryText"
+                  >
+                    <Check className="w-3.5 h-3.5 text-fimiku-cta flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -434,23 +395,18 @@ export default function ProductDetailPage({
               <span className="text-xs font-semibold text-fimiku-darkText">
                 Quantity:
               </span>
-
               <div className="flex items-center border border-fimiku-lightBorder rounded-full bg-white px-2 py-1">
                 <button
                   type="button"
-                  onClick={() =>
-                    setQuantity((current) => Math.max(1, current - 1))
-                  }
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                   aria-label="Decrease quantity"
                   className="p-1 text-fimiku-grayText hover:text-fimiku-darkText"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-
                 <span className="px-4 text-xs font-bold text-fimiku-darkText">
                   {quantity}
                 </span>
-
                 <button
                   type="button"
                   onClick={() =>
@@ -464,11 +420,8 @@ export default function ProductDetailPage({
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
-
               <span className="text-[11px] text-fimiku-grayText">
-                {product.stock > 0
-                  ? `(${product.stock} in stock)`
-                  : 'Available'}
+                {product.stock > 0 ? `(${product.stock} in stock)` : 'Available'}
               </span>
             </div>
 
@@ -481,7 +434,6 @@ export default function ProductDetailPage({
                 <ShoppingBag className="w-4 h-4 text-fimiku-cta" />
                 Add to Bag
               </button>
-
               <button
                 type="button"
                 onClick={handleBuyNow}
@@ -497,7 +449,6 @@ export default function ProductDetailPage({
               <ShieldCheck className="w-4 h-4 text-fimiku-cta" />
               <span>100% Certified Platinum Silicone</span>
             </div>
-
             <div className="flex items-center gap-2">
               <Droplets className="w-4 h-4 text-fimiku-primary" />
               <span>Dishwasher &amp; Sterilizer Safe</span>
@@ -512,7 +463,6 @@ export default function ProductDetailPage({
           <h2 className="text-xl sm:text-2xl font-bold text-fimiku-darkText">
             Parent Reviews &amp; Feedback
           </h2>
-
           <p className="text-xs text-fimiku-secondaryText">
             Real experiences from parents using Fimiku essentials
           </p>
@@ -521,25 +471,17 @@ export default function ProductDetailPage({
         <div className="space-y-4 divide-y divide-fimiku-lightBorder">
           {product.reviews && product.reviews.length > 0 ? (
             product.reviews.map((review: any) => (
-              <div
-                key={review.id}
-                className="pt-4 first:pt-0 space-y-1.5"
-              >
+              <div key={review.id} className="pt-4 first:pt-0 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-fimiku-darkText">
                     {review.user_name || 'Verified Parent'}
                   </span>
-
                   <div className="flex text-amber-400">
                     {[...Array(review.rating || 5)].map((_, index) => (
-                      <Star
-                        key={index}
-                        className="w-3 h-3 fill-current"
-                      />
+                      <Star key={index} className="w-3 h-3 fill-current" />
                     ))}
                   </div>
                 </div>
-
                 <p className="text-xs text-fimiku-secondaryText leading-relaxed">
                   {review.comment}
                 </p>
@@ -559,12 +501,8 @@ export default function ProductDetailPage({
           <h3 className="font-bold text-xs uppercase tracking-wider text-fimiku-darkText">
             Leave a Review
           </h3>
-
           <div className="flex items-center gap-3">
-            <span className="text-xs text-fimiku-secondaryText">
-              Rating:
-            </span>
-
+            <span className="text-xs text-fimiku-secondaryText">Rating:</span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -573,9 +511,7 @@ export default function ProductDetailPage({
                   onClick={() => setReviewRating(star)}
                   aria-label={`Rate ${star} stars`}
                   className={`p-1 ${
-                    star <= reviewRating
-                      ? 'text-amber-400'
-                      : 'text-gray-300'
+                    star <= reviewRating ? 'text-amber-400' : 'text-gray-300'
                   }`}
                 >
                   <Star className="w-4 h-4 fill-current" />
@@ -583,7 +519,6 @@ export default function ProductDetailPage({
               ))}
             </div>
           </div>
-
           <textarea
             rows={3}
             value={reviewComment}
@@ -591,7 +526,6 @@ export default function ProductDetailPage({
             placeholder="Share how this product helped your little one..."
             className="w-full p-3.5 text-xs bg-fimiku-softLavender border border-fimiku-lightBorder rounded-2xl focus:outline-none focus:border-fimiku-primary text-fimiku-darkText resize-none"
           />
-
           <button
             type="submit"
             disabled={submittingReview || !reviewComment.trim()}
@@ -608,12 +542,10 @@ export default function ProductDetailPage({
           <div className="text-sm font-bold text-fimiku-darkText">
             ₹{product.discount_price || product.price}
           </div>
-
           <span className="text-[10px] text-fimiku-cta font-semibold">
             Free Express Delivery
           </span>
         </div>
-
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -629,7 +561,6 @@ export default function ProductDetailPage({
               }`}
             />
           </button>
-
           <button
             type="button"
             onClick={handleAddToCart}
