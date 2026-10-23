@@ -77,7 +77,6 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     id: 22 as any,
     name: 'Pet Teether',
     slug: 'pet-teether',
-    sku: 'PGT-01E',
     price: '549.00',
     image_url: '/products/blue-textured-bone-teether.webp',
     category_name: 'Pet Toys',
@@ -92,7 +91,6 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     id: 23 as any,
     name: 'Baby Teether',
     slug: 'catalog-baby-teether',
-    sku: 'BGT-01F',
     price: '549.00',
     image_url: '/products/baby-teether-main.jpg',
     category_name: 'Teething Toys',
@@ -118,6 +116,10 @@ function normalize(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
+/**
+ * Deduplicate products using SKU, slug, or name.
+ * ProductType does not require a SKU property.
+ */
 function getProductKey(product: any): string {
   const sku = normalize(product?.sku);
   if (sku) return `sku:${sku}`;
@@ -126,27 +128,22 @@ function getProductKey(product: any): string {
   if (slug) return `slug:${slug}`;
 
   const name = normalize(product?.name).replace(/[^a-z0-9]/g, '');
-  return name ? `name:${name}` : `id:${String(product?.id ?? '')}`;
+  if (name) return `name:${name}`;
+
+  return `id:${String(product?.id ?? '')}`;
 }
 
-/**
- * Remove duplicates by SKU, slug, or product name.
- * API records take priority over fallback records.
- */
-function uniqueProducts(
-  liveProducts: ProductType[],
-  fallbackProducts: ProductType[]
-): ProductType[] {
+function deduplicateProducts(items: ProductType[]): ProductType[] {
   const map = new Map<string, ProductType>();
 
-  // Add fallback products first.
-  for (const product of fallbackProducts) {
-    map.set(getProductKey(product), product);
-  }
+  for (const product of items) {
+    const key = getProductKey(product);
+    if (!key || key === 'id:') continue;
 
-  // Real API products replace matching fallback entries.
-  for (const product of liveProducts) {
-    map.set(getProductKey(product), product);
+    // Keep only one entry for each product key.
+    if (!map.has(key)) {
+      map.set(key, product);
+    }
   }
 
   return Array.from(map.values());
@@ -234,14 +231,13 @@ function ShopContent() {
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
         /*
-         * If the API returns products, use those records only.
-         * Do not append fallback records to the live catalog.
-         * This prevents fallback cards from repeating real products.
+         * Use live API products whenever available.
+         * Fall back only when the API returns no products.
+         * This avoids mixing fallback cards into the live catalog.
          */
-        const source =
-          live.length > 0
-            ? uniqueProducts(live, [])
-            : uniqueProducts([], FALLBACK_PRODUCTS);
+        const source = deduplicateProducts(
+          live.length > 0 ? live : FALLBACK_PRODUCTS
+        );
 
         const filtered = source.filter(product =>
           match(product, cat, search)
@@ -253,12 +249,12 @@ function ShopContent() {
       } catch (error) {
         console.error('Failed to load products:', error);
 
-        const filtered = uniqueProducts([], FALLBACK_PRODUCTS).filter(
+        const fallback = deduplicateProducts(FALLBACK_PRODUCTS).filter(
           product => match(product, cat, search)
         );
 
         if (!cancelled) {
-          setProducts(sortProducts(filtered, sort));
+          setProducts(sortProducts(fallback, sort));
         }
       } finally {
         if (!cancelled) setLoading(false);
