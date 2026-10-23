@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   Heart,
@@ -28,11 +28,9 @@ const FEEDING_SET_IMAGES = [
   '/products/baby-feeding-set-purple.webp',
 ];
 
-export default function ProductDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ProductDetailPage() {
+  const params = useParams<{ id: string }>();
+  const productId = params?.id ?? '';
   const router = useRouter();
 
   const [product, setProduct] = useState<any>(null);
@@ -48,16 +46,29 @@ export default function ProductDetailPage({
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
+    if (!productId) return;
+
     let mounted = true;
 
     async function fetchProduct() {
+      setLoading(true);
+
       try {
-        const response = await api.get(`/products/${params.id}/`);
-        if (mounted) setProduct(response.data);
+        const response = await api.get(`/products/${productId}/`);
+
+        if (mounted) {
+          setProduct(response.data);
+        }
       } catch (error) {
         console.error('Failed to load product details:', error);
+
+        if (mounted) {
+          setProduct(null);
+        }
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
@@ -66,7 +77,7 @@ export default function ProductDetailPage({
     return () => {
       mounted = false;
     };
-  }, [params.id]);
+  }, [productId]);
 
   const productName = String(product?.name || '').trim().toLowerCase();
   const productSlug = String(product?.slug || '').trim().toLowerCase();
@@ -77,12 +88,14 @@ export default function ProductDetailPage({
       productName.includes('set')) ||
     productSlug === 'silicone-baby-feeding-set';
 
-  const galleryImages: string[] = isFeedingSet
-    ? FEEDING_SET_IMAGES
-    : (getProductGallery(product) || []).filter(
-        (image: unknown): image is string =>
-          typeof image === 'string' && image.trim().length > 0
-      );
+  const galleryImages: string[] = product
+    ? isFeedingSet
+      ? FEEDING_SET_IMAGES
+      : getProductGallery(product).filter(
+          (image: unknown): image is string =>
+            typeof image === 'string' && image.trim().length > 0
+        )
+    : [];
 
   const safeGallery = galleryImages.filter(
     (image) => !failedGalleryImages.includes(image)
@@ -103,7 +116,6 @@ export default function ProductDetailPage({
     setFailedGalleryImages((current) =>
       current.includes(imageUrl) ? current : [...current, imageUrl]
     );
-    setActiveImage(0);
   };
 
   const showPreviousImage = () => {
@@ -156,7 +168,7 @@ export default function ProductDetailPage({
       showToast('⭐ Thank you for your review!');
       setReviewComment('');
 
-      const response = await api.get(`/products/${params.id}/`);
+      const response = await api.get(`/products/${productId}/`);
       setProduct(response.data);
     } catch {
       showToast('⚠️ Could not submit review. Please try again.');
@@ -207,7 +219,7 @@ export default function ProductDetailPage({
       </Link>
 
       <div className="grid md:grid-cols-2 gap-10 items-start">
-        {/* Main product gallery */}
+        {/* Main product image */}
         <div className="space-y-4">
           <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
             {currentImage ? (
@@ -292,7 +304,7 @@ export default function ProductDetailPage({
             </span>
           </div>
 
-          {/* Smaller thumbnail cards with correctly sized images */}
+          {/* Compact thumbnail boxes */}
           {safeGallery.length > 1 && (
             <div className="grid grid-cols-2 gap-3">
               {safeGallery.map((image, index) => (
@@ -301,7 +313,7 @@ export default function ProductDetailPage({
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`Select product image ${index + 1}`}
-                  className={`flex h-36 items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-3 transition ${
+                  className={`flex h-28 min-h-0 items-center justify-center overflow-hidden rounded-xl border-2 bg-white p-2 transition ${
                     activeImage === index
                       ? 'border-fimiku-cta shadow-sm'
                       : 'border-fimiku-lightBorder hover:border-fimiku-primary'
@@ -310,7 +322,7 @@ export default function ProductDetailPage({
                   <img
                     src={image}
                     alt={`${product.name} thumbnail ${index + 1}`}
-                    className="h-full w-full object-contain"
+                    className="block max-h-full max-w-full object-contain"
                     onError={() => handleGalleryImageError(image)}
                   />
                 </button>
@@ -402,6 +414,7 @@ export default function ProductDetailPage({
             )}
           </div>
 
+          {/* Quantity selector */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-4">
               <span className="text-xs font-semibold text-fimiku-darkText">
@@ -411,9 +424,7 @@ export default function ProductDetailPage({
               <div className="flex items-center border border-fimiku-lightBorder rounded-full bg-white px-2 py-1">
                 <button
                   type="button"
-                  onClick={() =>
-                    setQuantity((current) => Math.max(1, current - 1))
-                  }
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                   aria-label="Decrease quantity"
                   className="p-1 text-fimiku-grayText hover:text-fimiku-darkText"
                 >
