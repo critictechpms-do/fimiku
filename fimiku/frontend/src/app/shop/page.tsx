@@ -19,6 +19,31 @@ const FALLBACK_PRODUCTS: ProductType[] = [
 
 const CATEGORIES = [['Teething Toys', 'teethers'], ['Bath Toys', 'bath'], ['Feeding Accessories', 'feeding'], ['Sensory Learning', 'sensory'], ['Baby Play', 'baby-play'], ['Kitchen Silicone', 'kitchen']];
 
+// Products marked for removal from the shop screenshots are hidden from the
+// storefront. Their records and image files remain untouched in case they are
+// needed again later.
+const HIDDEN_PRODUCT_SLUGS = new Set([
+  'pastel-silicone-stacking-tower',
+  'textured-baby-teething-toy',
+  'sensory-teether-collection',
+  'bath-toy-collection',
+  'teething-ring-collection',
+]);
+
+const HIDDEN_PRODUCT_NAMES = [
+  'pastel geometric silicone stacking tower',
+  'textured baby teething toy',
+  'sensory teether collection',
+  'bath toy collection',
+  'teething ring collection',
+];
+
+function isHiddenProduct(product: any): boolean {
+  const slug = String(product?.slug ?? '').toLowerCase().trim();
+  const name = String(product?.name ?? '').toLowerCase().trim();
+  return HIDDEN_PRODUCT_SLUGS.has(slug) || HIDDEN_PRODUCT_NAMES.includes(name);
+}
+
 function match(p: any, category: string, query: string) {
   const nameAndCategory = `${p.name || ''} ${p.category_name || ''} ${p.category?.name || ''}`.toLowerCase();
   if (query && !nameAndCategory.includes(query.toLowerCase().trim())) return false;
@@ -56,17 +81,17 @@ function ShopContent() {
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
         // Always enforce the selected category and search on the client as well.
-        const filtered = live.filter(product => match(product, cat, search));
+        const filtered = live.filter(product => !isHiddenProduct(product) && match(product, cat, search));
         // Remove duplicate records returned by the API, preferring each product ID.
         const unique = Array.from(new Map(filtered.map(product => [String(product.id), product])).values());
-        const fallback = FALLBACK_PRODUCTS.filter(product => match(product, cat, search));
+        const fallback = FALLBACK_PRODUCTS.filter(product => !isHiddenProduct(product) && match(product, cat, search));
 
         if (!cancelled) {
           setProducts(unique.length > 0 ? unique : live.length === 0 ? fallback : []);
         }
       } catch (error) {
         console.error('Failed to load products:', error);
-        if (!cancelled) setProducts(FALLBACK_PRODUCTS.filter(product => match(product, cat, search)));
+        if (!cancelled) setProducts(FALLBACK_PRODUCTS.filter(product => !isHiddenProduct(product) && match(product, cat, search)));
       } finally {
         if (!cancelled) setLoading(false);
       }
