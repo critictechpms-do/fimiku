@@ -1,3 +1,4 @@
+
 [
   {
     "image": "blue-textured-bone-teether.webp",
@@ -33,5 +34,26 @@
     "image": "sensory-stacking-toy-set.webp",
     "suggested_name": "Sensory Stacking Toy Set",
     "category": "Sensory Learning"
+  },
+  {
+    "image": "bath-toy-collection.webp",
+    "suggested_name": "Foldable Tub",
+    "category": "Bath Toys",
+    "catalogue_code": "FST-01A",
+    "image_match": "Needs confirmation"
+  },
+  {
+    "image": "blue-textured-bone-teether.webp",
+    "suggested_name": "Baby Teether",
+    "category": "Teething Toys",
+    "catalogue_code": "BGT-01F",
+    "image_match": "Needs confirmation"
+  },
+  {
+    "image": "silicone-flatlay.jpg",
+    "suggested_name": "Dish Drying Mat",
+    "category": "Kitchen Silicone",
+    "catalogue_code": "KSM-01C",
+    "image_match": "Needs confirmation"
   }
 ]
