@@ -2,10 +2,9 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   ArrowRight, Check, ChevronDown, Droplets, Heart, Leaf, Mail,
-  PackageCheck, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles,
+  PackageCheck, ShieldCheck, ShoppingBag, Sparkles,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getProductImage } from '@/lib/productImages';
@@ -77,32 +76,7 @@ export default function HomePage() {
   const [email, setEmail] = useState('');
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [newsletterError, setNewsletterError] = useState(false);
-  const [shopTransition, setShopTransition] = useState(false);
-  const [animatingProductId, setAnimatingProductId] = useState<string | number | null>(null);
-  const [cartPopup, setCartPopup] = useState(false);
-  const router = useRouter();
   const { addToCart } = useCart();
-
-  function navigateWithBagAnimation(href: string) {
-    if (shopTransition) return;
-    setShopTransition(true);
-    window.setTimeout(() => router.push(href), 520);
-  }
-
-  async function handleHomepageAddToCart(product: ProductType) {
-    // Clear first so repeated clicks restart the CSS animation reliably.
-    setAnimatingProductId(null);
-    window.requestAnimationFrame(() => setAnimatingProductId(product.id));
-    try {
-      await addToCart(product);
-      setCartPopup(true);
-      window.setTimeout(() => setCartPopup(false), 1700);
-    } catch (error) {
-      console.error('Failed to add product to cart:', error);
-    } finally {
-      window.setTimeout(() => setAnimatingProductId(null), 600);
-    }
-  }
 
   async function loadProducts() {
     setLoading(true);
@@ -136,32 +110,6 @@ export default function HomePage() {
 
   return (
     <main className="pb-8 text-[#29263a]">
-      {cartPopup && (
-        <div className="fimiku-cart-popup" role="status" aria-live="polite">
-          <span className="fimiku-cart-popup-icon"><ShoppingCart size={25} strokeWidth={2.2} /></span>
-          <span className="fimiku-cart-popup-copy"><strong>Added to cart</strong><small>{'Your item is ready in the cart.'}</small></span>
-        </div>
-      )}
-      {shopTransition && (
-        <div className="fimiku-bag-transition" aria-hidden="true">
-          <div className="fimiku-bag-orbit"><ShoppingBag size={42} strokeWidth={1.8} /></div>
-        </div>
-      )}
-      <style jsx global>{`
-        .fimiku-bag-transition { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(247, 241, 255, .94); animation: fimiku-fade-in 180ms ease-out both; pointer-events: all; }
-        .fimiku-bag-orbit { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 9999px; color: #fff; background: #8b55f6; box-shadow: 0 0 0 0 rgba(139, 85, 246, .35); animation: fimiku-bag-grow 520ms cubic-bezier(.2,.8,.2,1) both; }
-        .fimiku-cart-click { animation: fimiku-cart-bounce 520ms cubic-bezier(.2,.8,.2,1); }
-        .fimiku-cart-popup { position: fixed; top: 22px; left: 50%; z-index: 10000; display: flex; align-items: center; gap: 12px; min-width: 240px; max-width: calc(100vw - 32px); padding: 13px 18px; border: 1px solid #e7d9ff; border-radius: 16px; background: rgba(255,255,255,.97); color: #29263a; box-shadow: 0 14px 38px rgba(84,58,121,.18); transform: translateX(-50%); animation: fimiku-cart-popup-in 360ms cubic-bezier(.2,.8,.2,1) both; }
-        .fimiku-cart-popup-icon { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border-radius: 13px; background: #f0e7ff; color: #8b55f6; animation: fimiku-cart-icon-pop 460ms cubic-bezier(.2,.8,.2,1) both; }
-        .fimiku-cart-popup-copy { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
-        .fimiku-cart-popup-copy small { color: #827a8e; font-size: 11px; }
-        @keyframes fimiku-cart-popup-in { from { opacity: 0; transform: translate(-50%, -14px) scale(.94); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
-        @keyframes fimiku-cart-icon-pop { 0% { transform: scale(.45) rotate(-12deg); } 65% { transform: scale(1.14) rotate(4deg); } 100% { transform: scale(1) rotate(0); } }
-        @keyframes fimiku-cart-bounce { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.22); } 65% { transform: scale(.92); } }
-        @keyframes fimiku-fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fimiku-bag-grow { 0% { transform: scale(.45) rotate(-12deg); opacity: .45; box-shadow: 0 0 0 0 rgba(139,85,246,.35); } 55% { transform: scale(1.25) rotate(4deg); opacity: 1; box-shadow: 0 0 0 22px rgba(139,85,246,.10); } 100% { transform: scale(1.8) rotate(0); opacity: 0; box-shadow: 0 0 0 42px rgba(139,85,246,0); } }
-        @media (prefers-reduced-motion: reduce) { .fimiku-bag-transition, .fimiku-bag-orbit, .fimiku-cart-popup, .fimiku-cart-popup-icon, .fimiku-cart-click { animation-duration: 1ms !important; } }
-      `}</style>
       {/* Hero */}
       <section className="mx-auto max-w-[1320px] px-3 pt-3 sm:px-5 lg:px-8">
         <div className="relative grid min-h-[390px] overflow-hidden rounded-[22px] bg-[#f7f1ff] shadow-[0_14px_40px_rgba(84,58,121,.08)] md:grid-cols-[.82fr_1.18fr] lg:min-h-[450px]">
@@ -177,7 +125,7 @@ export default function HomePage() {
                 Premium food-grade silicone toys that are BPA-free, ultra-soft, and designed for your baby’s ultimate comfort.
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
-                <Link href="/shop" onClick={(event) => { event.preventDefault(); navigateWithBagAnimation("/shop"); }} className="inline-flex items-center gap-2 rounded-full bg-[#8b55f6] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#7441dc]">
+                <Link href="/shop" className="inline-flex items-center gap-2 rounded-full bg-[#8b55f6] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#7441dc]">
                   Shop Now <ArrowRight size={14} />
                 </Link>
                 <Link href="#bestsellers" className="inline-flex items-center gap-2 rounded-full border border-[#dfd2f6] bg-white px-5 py-3 text-xs font-bold text-[#4e435f] hover:bg-[#faf7ff]">
@@ -194,7 +142,7 @@ export default function HomePage() {
           <div className="relative min-h-[270px] md:min-h-[390px] lg:min-h-[450px]">
             <picture className="absolute inset-0">
               <source media="(min-width: 768px)" srcSet={img('hero-baby.png')} />
-              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-[65%_center]" />
+              <img src={img('hero-baby.png')} alt="Baby holding a soft sage silicone teether" className="h-full w-full object-cover object-right" />
             </picture>
             <div className="absolute inset-y-0 left-0 hidden w-[22%] bg-[#f7f1ff] md:block" />
             <div className="absolute inset-y-0 left-[22%] hidden w-[28%] bg-gradient-to-r from-[#f7f1ff] to-transparent md:block" />
@@ -245,7 +193,7 @@ export default function HomePage() {
                   ) : <div className="mt-1 text-[10px] text-[#9a91a4]">No reviews yet</div>}
                   <div className="mt-auto flex items-center justify-between pt-3">
                     <span className="text-xs font-bold">₹{product.discount_price || product.final_price || product.price}</span>
-                    <button onClick={() => void handleHomepageAddToCart(product)} aria-label={`Add ${product.name} to cart`} className={`flex h-8 w-8 items-center justify-center rounded-full bg-[#f3edff] text-[#8250e8] hover:bg-[#8b55f6] hover:text-white ${animatingProductId === product.id ? 'fimiku-cart-click' : ''}`} aria-live="polite">
+                    <button onClick={() => void addToCart(product)} aria-label={`Add ${product.name} to cart`} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3edff] text-[#8250e8] hover:bg-[#8b55f6] hover:text-white">
                       <ShoppingBag size={14} />
                     </button>
                   </div>
