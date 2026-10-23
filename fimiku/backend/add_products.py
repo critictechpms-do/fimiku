@@ -1,136 +1,265 @@
-import sqlite3
+
 import json
+import sqlite3
+from pathlib import Path
 
-db = sqlite3.connect("db.sqlite3")
+DB_PATH = Path(__file__).resolve().parent / "db.sqlite3"
 
-products = [
+# Catalogue MRP is stored in price.
+# Existing discount_price values are preserved for matching products.
+CATALOGUE = [
     {
-        "name": "Silicone Foldable Basket",
-        "slug": "silicone-foldable-basket",
-        "description": "Easily foldable - occupies less storage space, 24L capacity, high durability. Colour available: Pink. Size: 53.5 x 38 x 24 cm. Free shipping, 50% off MRP.",
-        "features": ["Pink", "24L capacity", "53.5 x 38 x 24 cm", "Foldable", "High durability"],
-        "material": "Silicone",
-        "target_age": "",
-        "price": 1089.34,
-        "stock": 10,
-        "sku": "SFB-001",
-        "category_id": 18,
+        "code": "FST-01A",
+        "name": "Foldable Tub",
+        "slugs": ["silicone-foldable-tub", "foldable-tub"],
+        "slug": "foldable-tub",
+        "description": "Foldable Tub from the Fimiku catalogue.",
+        "features": ["Catalogue code: FST-01A", "MRP: ₹2,200"],
+        "price": 2200.00,
+        "category_id": 13,
+        "target_age": "Babies",
+        "images": [],
     },
     {
-        "name": "Pet Slow Feeder Bowl - 3 in 1",
-        "slug": "pet-slow-feeder-bowl-3-in-1",
-        "description": "3 in 1 combo with normal bowl, slow feed bowl and anti-overflow pad. Waterproof silicone pad, antibacterial material, easily foldable, soft silicone, anti-skid vacuum suction cup. Colour available: Black. Free shipping, 50% off MRP.",
-        "features": ["Black", "3 in 1", "Normal bowl", "Slow feed bowl", "Anti-overflow pad", "Anti-skid vacuum suction cup"],
-        "material": "Silicone",
-        "target_age": "Pets",
-        "price": 711.02,
-        "stock": 10,
-        "sku": "PSFB-001",
-        "category_id": 17,
-    },
-    {
-        "name": "Silicone Kitchen Mat",
-        "slug": "silicone-kitchen-mat",
-        "description": "Waterproof silicone material that safely drains utensils. Withstands temperatures up to 260C. Hotpots can be placed on the table. Easily foldable and flexible. 5mm thickness. Dimensions: 45cm x 55cm. Colour available: Grey. Free shipping, 50% off MRP.",
-        "features": ["Grey", "45cm x 55cm", "5mm thickness", "Waterproof", "Heat resistant up to 260C", "Foldable"],
-        "material": "Silicone",
-        "target_age": "",
-        "price": 772.38,
-        "stock": 10,
-        "sku": "SKM-001",
-        "category_id": 18,
-    },
-    {
-        "name": "Silicone Baby Feeding Set",
-        "slug": "silicone-baby-feeding-set",
-        "description": "Complete silicone baby feeding set including plate, bowl, pocket bib, sipper cup with lid, fork and spoon set. Made of BPA-free and PVC-free silicone. Dishwasher, microwave and freezer safe. Suitable for babies and toddlers learning to self-feed. Available in 11 colours. Free shipping, 50% off MRP.",
-        "features": ["11 Colours", "BPA-free", "PVC-free", "Plate", "Bowl", "Pocket bib", "Sipper cup", "Fork and spoon set"],
-        "material": "Silicone",
-        "target_age": "Babies and toddlers",
-        "price": 861.50,
-        "stock": 10,
-        "sku": "SBFS-001",
+        "code": "BFS-01B",
+        "name": "Baby Feeding Set",
+        "slugs": ["silicone-baby-feeding-set", "catalog-baby-feeding-set"],
+        "slug": "catalog-baby-feeding-set",
+        "description": "Baby Feeding Set from the Fimiku catalogue.",
+        "features": ["Catalogue code: BFS-01B", "MRP: ₹1,723"],
+        "price": 1723.00,
         "category_id": 14,
+        "target_age": "Babies",
+        "images": [],
+    },
+    {
+        "code": "KSM-01C",
+        "name": "Dish Drying Mat",
+        "slugs": ["silicone-kitchen-mat", "dish-drying-mat"],
+        "slug": "dish-drying-mat",
+        "description": "Dish Drying Mat from the Fimiku catalogue.",
+        "features": ["Catalogue code: KSM-01C", "MRP: ₹1,544"],
+        "price": 1544.00,
+        "category_id": 18,
+        "target_age": "",
+        "images": [],
+    },
+    {
+        "code": "PFB-01D",
+        "name": "Pet Feeding Mat",
+        "slugs": ["pet-feeding-mat"],
+        "slug": "pet-feeding-mat",
+        "description": "Pet Feeding Mat from the Fimiku catalogue.",
+        "features": ["Catalogue code: PFB-01D", "MRP: ₹1,422"],
+        "price": 1422.00,
+        "category_id": 17,
+        "target_age": "Pets",
+        "images": [],
+    },
+    {
+        "code": "PGT-01E",
+        "name": "Pet Teether",
+        "slugs": ["pet-teether"],
+        "slug": "pet-teether",
+        "description": "Pet Teether from the Fimiku catalogue.",
+        "features": ["Catalogue code: PGT-01E", "MRP: ₹549"],
+        "price": 549.00,
+        "category_id": 17,
+        "target_age": "Pets",
+        "images": [],
+    },
+    {
+        "code": "BGT-01F",
+        "name": "Baby Teether",
+        "slugs": ["catalog-baby-teether"],
+        "slug": "catalog-baby-teether",
+        "description": "Baby Teether from the Fimiku catalogue.",
+        "features": ["Catalogue code: BGT-01F", "MRP: ₹549"],
+        "price": 549.00,
+        "category_id": 12,
+        "target_age": "Babies",
+        "images": ["/products/blue-textured-bone-teether.webp"],
     },
 ]
 
-for p in products:
-    existing = db.execute(
-        "SELECT id FROM store_product WHERE slug = ?",
-        (p["slug"],)
-    ).fetchone()
 
-    if existing:
-        print(f"ALREADY EXISTS: {p['name']} (ID {existing[0]})")
-        continue
+def main():
+    if not DB_PATH.is_file():
+        raise FileNotFoundError(f"Database not found: {DB_PATH}")
 
-    db.execute(
-        """
-        INSERT INTO store_product
-        (
-            name,
-            slug,
-            description,
-            features,
-            material,
-            target_age,
-            price,
-            discount_price,
-            stock,
-            sku,
-            image_url,
-            additional_images,
-            is_active,
-            is_featured,
-            created_at,
-            category_id
-        )
-        VALUES
-        (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?
-        )
-        """,
-        (
-            p["name"],
-            p["slug"],
-            p["description"],
-            json.dumps(p["features"]),
-            p["material"],
-            p["target_age"],
-            p["price"],
-            None,
-            p["stock"],
-            p["sku"],
-            "",
-            json.dumps([]),
-            1,
-            0,
-            p["category_id"],
-        )
-    )
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
 
-    print(f"ADDED: {p['name']}")
+    try:
+        columns = {
+            row["name"]
+            for row in db.execute(
+                "PRAGMA table_info(store_product)"
+            ).fetchall()
+        }
 
-db.commit()
+        required = {
+            "id", "name", "slug", "description", "features",
+            "material", "target_age", "price", "discount_price",
+            "stock", "sku", "image_url", "additional_images",
+            "is_active", "is_featured", "created_at", "category_id",
+        }
 
-print("\n===== PRODUCTS =====")
+        missing = required - columns
+        if missing:
+            raise RuntimeError(
+                "Missing database columns: " + ", ".join(sorted(missing))
+            )
 
-rows = db.execute(
-    """
-    SELECT id, name, price, stock, category_id
-    FROM store_product
-    WHERE slug IN (
-        'silicone-foldable-basket',
-        'pet-slow-feeder-bowl-3-in-1',
-        'silicone-kitchen-mat',
-        'silicone-baby-feeding-set'
-    )
-    ORDER BY id
-    """
-).fetchall()
+        db.execute("BEGIN IMMEDIATE")
 
-for row in rows:
-    print(row)
+        for p in CATALOGUE:
+            placeholders = ",".join("?" for _ in p["slugs"])
+            existing = db.execute(
+                f"""
+                SELECT *
+                FROM store_product
+                WHERE slug IN ({placeholders})
+                ORDER BY id
+                LIMIT 1
+                """,
+                p["slugs"],
+            ).fetchone()
 
-db.close()
-print("\nDONE!")
+            category = db.execute(
+                "SELECT id FROM store_category WHERE id = ?",
+                (p["category_id"],),
+            ).fetchone()
+
+            if category is None:
+                raise RuntimeError(
+                    f"Category {p['category_id']} is missing "
+                    f"for {p['name']}."
+                )
+
+            if existing:
+                # Preserve existing discount, stock, SKU, slug,
+                # image gallery, category, and other product settings.
+                try:
+                    features = json.loads(existing["features"] or "[]")
+                    if not isinstance(features, list):
+                        features = [str(features)]
+                except (json.JSONDecodeError, TypeError):
+                    features = []
+
+                for feature in p["features"]:
+                    if feature not in features:
+                        features.append(feature)
+
+                # Update MRP, but never overwrite discount_price.
+                db.execute(
+                    """
+                    UPDATE store_product
+                    SET name = ?,
+                        price = ?,
+                        features = ?,
+                        target_age = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        p["name"],
+                        p["price"],
+                        json.dumps(features, ensure_ascii=False),
+                        p["target_age"] or existing["target_age"],
+                        existing["id"],
+                    ),
+                )
+
+                print(
+                    f"UPDATED existing: {p['name']} "
+                    f"(ID {existing['id']})"
+                )
+                continue
+
+            # Check for a SKU or slug conflict before inserting.
+            conflicts = db.execute(
+                """
+                SELECT id, name, sku, slug
+                FROM store_product
+                WHERE sku = ? OR slug = ?
+                """,
+                (p["code"], p["slug"]),
+            ).fetchall()
+
+            if conflicts:
+                raise RuntimeError(
+                    f"SKU/slug conflict for {p['name']}: "
+                    f"{[dict(row) for row in conflicts]}"
+                )
+
+            images = p["images"]
+
+            db.execute(
+                """
+                INSERT INTO store_product (
+                    name, slug, description, features, material,
+                    target_age, price, discount_price, stock, sku,
+                    image_url, additional_images, is_active,
+                    is_featured, created_at, category_id
+                )
+                VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?,
+                    ?, ?, 1, 0, datetime('now'), ?
+                )
+                """,
+                (
+                    p["name"],
+                    p["slug"],
+                    p["description"],
+                    json.dumps(p["features"], ensure_ascii=False),
+                    "Silicone",
+                    p["target_age"],
+                    p["price"],
+                    p["code"],
+                    images[0] if images else "",
+                    json.dumps(images[1:]),
+                    p["category_id"],
+                ),
+            )
+
+            print(f"ADDED new: {p['name']} ({p['code']})")
+
+        db.commit()
+
+        print("\n===== VERIFY CATALOGUE =====")
+        for p in CATALOGUE:
+            row = db.execute(
+                """
+                SELECT id, name, sku, price, discount_price, stock, slug
+                FROM store_product
+                WHERE slug IN (
+                    SELECT slug FROM store_product WHERE name = ?
+                )
+                ORDER BY id
+                """,
+                (p["name"],),
+            ).fetchone()
+
+            if row:
+                selling_price = (
+                    row["discount_price"]
+                    if row["discount_price"] is not None
+                    else row["price"]
+                )
+                print(
+                    f"{row['name']} | MRP ₹{row['price']} | "
+                    f"Website price ₹{selling_price} | "
+                    f"Stock {row['stock']} | ID {row['id']}"
+                )
+
+        print("\nSUCCESS: Catalogue import completed.")
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    main()
