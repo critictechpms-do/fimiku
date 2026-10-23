@@ -6,6 +6,7 @@
 
 function cleanImageUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
+
   const url = value.trim();
   return url.length > 0 ? url : null;
 }
@@ -30,6 +31,7 @@ function extractImageUrls(value: unknown): string[] {
 }
 
 const LOCAL_GALLERIES: Record<string, string[]> = {
+  // Silicone Foldable Basket.
   basket: [
     '/products/01_silicone_foldable_basket/image4.jpeg',
     '/products/01_silicone_foldable_basket/image1.png',
@@ -37,6 +39,7 @@ const LOCAL_GALLERIES: Record<string, string[]> = {
     '/products/01_silicone_foldable_basket/image3.jpeg',
   ],
 
+  // Pet Slow Feeder Bowl - 3 in 1.
   petFeeder: [
     '/products/02_pet_slow_feeder_bowl_3in1/image8.jpeg',
     '/products/02_pet_slow_feeder_bowl_3in1/image5.png',
@@ -44,6 +47,7 @@ const LOCAL_GALLERIES: Record<string, string[]> = {
     '/products/02_pet_slow_feeder_bowl_3in1/image7.png',
   ],
 
+  // Silicone Kitchen Mat / Dish Drying Mat.
   kitchenMat: [
     '/products/03_silicone_kitchen_mat/image14.jpeg',
     '/products/03_silicone_kitchen_mat/image12.png',
@@ -52,19 +56,21 @@ const LOCAL_GALLERIES: Record<string, string[]> = {
     '/products/03_silicone_kitchen_mat/image16.jpeg',
   ],
 
-  // Baby Feeding Set: image22.jpeg is the main product image.
-  // The three variant images follow it.
+  // Baby Feeding Set.
+  // image23.jpeg is now the MAIN product image.
   babyFeedingSet: [
-    '/products/04_silicone_baby_feeding_set/image22.jpeg',
+    '/products/04_silicone_baby_feeding_set/image23.jpeg',
     '/products/baby-feeding-set.webp',
     '/products/baby-feeding-set-beige.webp',
     '/products/baby-feeding-set-purple.webp',
   ],
 
+  // Foldable Tub.
   foldableTub: [
     '/products/bath-toy-collection.webp',
   ],
 
+  // Baby Teether.
   babyTeether: [
     '/products/blue-textured-bone-teether.webp',
   ],
@@ -85,7 +91,7 @@ function getLocalGallery(product: any): string[] | null {
     return LOCAL_GALLERIES.basket;
   }
 
-  // Pet Slow Feeder Bowl. Do not match Pet Feeding Mat.
+  // Pet Slow Feeder Bowl. Separate from Pet Feeding Mat.
   if (
     text.includes('slow feeder') ||
     text.includes('pet feeder') ||
@@ -103,7 +109,7 @@ function getLocalGallery(product: any): string[] | null {
     return LOCAL_GALLERIES.kitchenMat;
   }
 
-  // Baby Feeding Set, supporting existing and catalogue records.
+  // Baby Feeding Set.
   if (
     slug === 'silicone-baby-feeding-set' ||
     slug === 'catalog-baby-feeding-set' ||
@@ -117,7 +123,7 @@ function getLocalGallery(product: any): string[] | null {
     return LOCAL_GALLERIES.babyFeedingSet;
   }
 
-  // Foldable Tub, separate from Foldable Basket.
+  // Foldable Tub. Separate from Foldable Basket.
   if (
     text.includes('foldable tub') ||
     sku === 'FST-01A'
@@ -134,18 +140,22 @@ function getLocalGallery(product: any): string[] | null {
     return LOCAL_GALLERIES.babyTeether;
   }
 
-  // Other products use images from the backend.
+  // Other products use backend-provided images.
   return null;
 }
 
 export function getProductImage(product: any): string {
   const localGallery = getLocalGallery(product);
-  if (localGallery !== null) return localGallery[0];
+
+  if (localGallery !== null) {
+    return localGallery[0];
+  }
 
   const slug = String(product?.slug ?? '').toLowerCase().trim();
   const name = String(product?.name ?? '').toLowerCase().trim();
   const text = `${slug} ${name}`;
 
+  // Sensory stacking tower.
   if (
     slug === 'pastel-silicone-stacking-tower' ||
     text.includes('stacking tower')
@@ -153,6 +163,7 @@ export function getProductImage(product: any): string {
     return '/products/sensory-stacking-toy-set.webp';
   }
 
+  // Sensory teether collection.
   if (
     slug === 'sensory-teether-collection' ||
     text.includes('sensory teether')
@@ -160,6 +171,7 @@ export function getProductImage(product: any): string {
     return '/products/sensory-teether-collection.webp';
   }
 
+  // Bath toy collection.
   if (
     slug === 'bath-toy-collection' ||
     text.includes('bath toy')
@@ -167,6 +179,7 @@ export function getProductImage(product: any): string {
     return '/products/bath-toy-collection.webp';
   }
 
+  // Silicone bib and bowl set.
   if (
     slug === 'silicone-bib-bowl-set' ||
     text.includes('bib bowl')
@@ -174,6 +187,7 @@ export function getProductImage(product: any): string {
     return '/products/silicone-bib-bowl-set.webp';
   }
 
+  // Teething ring collection.
   if (
     slug === 'teething-ring-collection' ||
     text.includes('koala') ||
@@ -182,6 +196,7 @@ export function getProductImage(product: any): string {
     return '/products/teething-ring-collection.webp';
   }
 
+  // Preserve backend images for other products.
   return (
     cleanImageUrl(product?.image_url) ??
     cleanImageUrl(product?.image) ??
@@ -191,7 +206,10 @@ export function getProductImage(product: any): string {
 
 export function getProductGallery(product: any): string[] {
   const localGallery = getLocalGallery(product);
-  if (localGallery !== null) return [...localGallery];
+
+  if (localGallery !== null) {
+    return [...localGallery];
+  }
 
   const mainImage = getProductImage(product);
 
