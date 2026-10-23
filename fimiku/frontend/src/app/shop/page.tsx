@@ -8,23 +8,10 @@ import { api } from '@/lib/api';
 import { useCart, ProductType } from '@/context/CartContext';
 import { getProductImage } from '@/lib/productImages';
 
+const REMOVED_PRODUCT_SLUG = 'pastel-silicone-stacking-tower';
+const REMOVED_PRODUCT_NAME = 'pastel geometric silicone stacking tower';
+
 const FALLBACK_PRODUCTS: ProductType[] = [
-  {
-    id: 18 as any,
-    name: 'Pastel Geometric Silicone Stacking Tower',
-    slug: 'pastel-silicone-stacking-tower',
-    price: '799.00',
-    discount_price: '649.00',
-    final_price: '649.00',
-    image_url: '/products/sensory-stacking-toy-set.webp',
-    category_name: 'Sensory Learning',
-    stock: 56,
-    is_in_stock: true,
-    description: 'Soft silicone stacking toy designed for sensory play and early learning.',
-    material: 'Food-grade silicone',
-    target_age: '6 months+',
-    features: ['Soft silicone', 'Easy to clean', 'Encourages hand-eye coordination'],
-  },
   {
     id: 13 as any,
     name: '3 in 1 Pet slow feeder bowl',
@@ -120,6 +107,17 @@ function normalizeName(value: unknown): string {
   return normalize(value).replace(/[^a-z0-9]/g, '');
 }
 
+function isRemovedProduct(product: any): boolean {
+  const slug = normalize(product?.slug);
+  const name = normalize(product?.name);
+
+  return (
+    slug === REMOVED_PRODUCT_SLUG ||
+    name === REMOVED_PRODUCT_NAME ||
+    name.includes(REMOVED_PRODUCT_NAME)
+  );
+}
+
 function getProductKey(product: any): string {
   const sku = normalize(product?.sku);
   if (sku) return `sku:${sku}`;
@@ -134,9 +132,9 @@ function getProductKey(product: any): string {
 }
 
 /**
- * Merge fallback and live products without showing duplicates.
- * Fallbacks are inserted first; live API records replace matching fallbacks.
- * ProductType does not require a SKU property.
+ * Keep all valid API products and restore missing fallback products.
+ * The API record takes priority over its matching fallback.
+ * The removed stacking tower is excluded from every source.
  */
 function mergeAndDeduplicateProducts(
   fallbackProducts: ProductType[],
@@ -148,59 +146,86 @@ function mergeAndDeduplicateProducts(
     const candidateSku = normalize(candidate?.sku);
     const existingSku = normalize(existing?.sku);
 
-    if (candidateSku && existingSku && candidateSku === existingSku) {
+    if (
+      candidateSku &&
+      existingSku &&
+      candidateSku === existingSku
+    ) {
       return true;
     }
 
     const candidateSlug = normalize(candidate?.slug);
     const existingSlug = normalize(existing?.slug);
 
-    if (candidateSlug && existingSlug && candidateSlug === existingSlug) {
+    if (
+      candidateSlug &&
+      existingSlug &&
+      candidateSlug === existingSlug
+    ) {
       return true;
     }
 
     const candidateName = normalizeName(candidate?.name);
     const existingName = normalizeName(existing?.name);
 
-    if (candidateName && existingName && candidateName === existingName) {
-      return true;
-    }
-
-    return false;
+    return Boolean(
+      candidateName &&
+      existingName &&
+      candidateName === existingName
+    );
   };
 
-  // Add fallbacks first, then let live records replace matching products.
-  for (const product of [...fallbackProducts, ...liveProducts]) {
-    const existingIndex = result.findIndex(existing =>
+  const fallbacks = fallbackProducts.filter(
+    product => !isRemovedProduct(product)
+  );
+
+  const live = liveProducts.filter(
+    product => !isRemovedProduct(product)
+  );
+
+  for (const product of fallbacks) {
+    const index = result.findIndex(existing =>
       matchesExisting(product, existing)
     );
 
-    if (existingIndex === -1) {
+    if (index === -1) {
       result.push(product);
-    } else {
-      const isLiveProduct = liveProducts.includes(product);
-
-      if (isLiveProduct) {
-        result[existingIndex] = product;
-      }
     }
   }
 
-  // Final safeguard against duplicate keys.
-  const seenKeys = new Set<string>();
+  for (const product of live) {
+    const index = result.findIndex(existing =>
+      matchesExisting(product, existing)
+    );
+
+    if (index === -1) {
+      result.push(product);
+    } else {
+      result[index] = product;
+    }
+  }
+
+  const seen = new Set<string>();
 
   return result.filter(product => {
+    if (isRemovedProduct(product)) return false;
+
     const key = getProductKey(product);
 
-    if (!key || key === 'id:') return false;
-    if (seenKeys.has(key)) return false;
+    if (!key || key === 'id:' || seen.has(key)) {
+      return false;
+    }
 
-    seenKeys.add(key);
+    seen.add(key);
     return true;
   });
 }
 
-function match(product: any, category: string, query: string): boolean {
+function match(
+  product: any,
+  category: string,
+  query: string
+): boolean {
   const name = normalize(product?.name);
   const categoryName = normalize(
     product?.category_name ?? product?.category?.name
@@ -212,9 +237,12 @@ function match(product: any, category: string, query: string): boolean {
   const sku = normalize(product?.sku);
 
   if (query.trim()) {
-    const searchable = `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
+    const searchable =
+      `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
 
-    if (!searchable.includes(normalize(query))) return false;
+    if (!searchable.includes(normalize(query))) {
+      return false;
+    }
   }
 
   if (!category) return true;
@@ -228,22 +256,26 @@ function match(product: any, category: string, query: string): boolean {
     kitchen: ['kitchen', 'mat'],
   };
 
-  const searchable = `${name} ${categoryName} ${categorySlug} ${slug}`;
+  const searchable =
+    `${name} ${categoryName} ${categorySlug} ${slug}`;
 
   return (aliases[category] ?? [category]).some(alias =>
     searchable.includes(alias)
   );
 }
 
-function sortProducts(items: ProductType[], sort: string): ProductType[] {
+function sortProducts(
+  items: ProductType[],
+  sort: string
+): ProductType[] {
   const result = [...items];
 
   const getPrice = (product: any) =>
     Number(
       product?.final_price ??
-        product?.discount_price ??
-        product?.price ??
-        0
+      product?.discount_price ??
+      product?.price ??
+      0
     );
 
   if (sort === 'price_low') {
@@ -282,9 +314,10 @@ function ShopContent() {
         const raw = response.data?.results ?? response.data;
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
-        // Keep all live products and restore fallback products missing from API.
-        // Matching records appear only once, with live API data taking priority.
-        const merged = mergeAndDeduplicateProducts(FALLBACK_PRODUCTS, live);
+        const merged = mergeAndDeduplicateProducts(
+          FALLBACK_PRODUCTS,
+          live
+        );
 
         const filtered = merged.filter(product =>
           match(product, cat, search)
@@ -305,7 +338,9 @@ function ShopContent() {
           setProducts(sortProducts(fallback, sort));
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -387,7 +422,9 @@ function ShopContent() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center">Loading products...</div>
+        <div className="py-20 text-center">
+          Loading products...
+        </div>
       ) : products.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-3xl">
           <p className="font-bold">No products found</p>
@@ -432,10 +469,15 @@ function ShopContent() {
 
                 <div className="flex items-center gap-1 text-amber-400 mt-2">
                   {[0, 1, 2, 3, 4].map(index => (
-                    <Star key={index} className="w-3 h-3 fill-current" />
+                    <Star
+                      key={index}
+                      className="w-3 h-3 fill-current"
+                    />
                   ))}
 
-                  <span className="text-[10px] text-gray-400">5.0</span>
+                  <span className="text-[10px] text-gray-400">
+                    5.0
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t">
@@ -486,7 +528,9 @@ export default function ShopPage() {
   return (
     <Suspense
       fallback={
-        <div className="py-24 text-center">Loading Fimiku Catalog...</div>
+        <div className="py-24 text-center">
+          Loading Fimiku Catalog...
+        </div>
       }
     >
       <ShopContent />
