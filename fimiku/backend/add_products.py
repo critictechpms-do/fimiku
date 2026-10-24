@@ -10,12 +10,12 @@ DB_PATH = Path(__file__).resolve().parent / "db.sqlite3"
 CATALOGUE = [
     {
         "code": "FST-01A",
-        "name": "Foldable Tub",
-        "slugs": ["silicone-foldable-tub", "foldable-tub"],
-        "slug": "foldable-tub",
-        "description": "Foldable Tub from the Fimiku catalogue.",
-        "features": ["Catalogue code: FST-01A", "MRP: ₹2,200"],
-        "price": 2200.00,
+        "name": "Foldable Basket",
+        "slugs": ["silicone-foldable-Basket", "foldable-Basket"],
+        "slug": "foldable-Basket",
+        "description": "Foldable Basket from the Fimiku catalogue.",
+        "features": ["Catalogue code: FST-01A", "MRP: ₹1089.34"],
+        "price": 1089.34,
         "category_id": 13,
         "target_age": "Babies",
         "images": [],
