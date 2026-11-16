@@ -442,7 +442,7 @@ export default function HomePage() {
           </div>
 
           <img
-            src={img('silicone-vs-plastic.jpg')}
+            src={img('silicone-vs-plastic.webp')}
             alt="Comparison of premium silicone and traditional plastic"
             className="mx-auto block h-auto w-full max-w-[850px] rounded-xl transition-transform duration-500 hover:scale-[1.01]"
             loading="lazy"
