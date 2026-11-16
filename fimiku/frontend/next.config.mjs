@@ -23,16 +23,6 @@ const nextConfig = {
 
   async rewrites() {
     return [
-      // Django Admin
-      {
-        source: "/admin",
-        destination: `${BACKEND_URL}/admin/`,
-      },
-      {
-        source: "/admin/:path*",
-        destination: `${BACKEND_URL}/admin/:path*`,
-      },
-
       // Django API
       {
         source: "/api/:path*/",
