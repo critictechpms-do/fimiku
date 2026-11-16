@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -616,13 +617,13 @@ export default function CheckoutPage() {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 animate-fade-in bg-fimiku-softLavender">
 
-        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-fimiku-lightBorder shadow-card space-y-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-fimiku-lightBorder shadow-card space-y-6 transition-all duration-300 hover:shadow-xl">
 
           {/* SUCCESS HEADER */}
 
           <div className="text-center space-y-3">
 
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200 motion-safe:animate-pulse">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
@@ -654,7 +655,7 @@ export default function CheckoutPage() {
 
           {/* PAYMENT METHOD */}
 
-          <div className="p-4 bg-fimiku-softLavender/50 rounded-2xl border border-fimiku-lightBorder">
+          <div className="p-4 bg-fimiku-softLavender/50 rounded-2xl border border-fimiku-lightBorder transition-all duration-300 hover:shadow-md">
 
             <div className="flex items-center justify-between">
 
@@ -684,7 +685,7 @@ export default function CheckoutPage() {
 
           {/* ORDERED ITEMS */}
 
-          <div className="bg-fimiku-softLavender/50 rounded-2xl p-5 border border-fimiku-lightBorder space-y-4">
+          <div className="bg-fimiku-softLavender/50 rounded-2xl p-5 border border-fimiku-lightBorder space-y-4 transition-all duration-300 hover:shadow-md">
 
             <h3 className="font-bold text-xs sm:text-sm text-fimiku-darkText">
               Ordered Items ({itemsList.length})
@@ -713,13 +714,13 @@ export default function CheckoutPage() {
                         item.id ||
                         idx
                       }
-                      className="py-3 flex items-center justify-between gap-4 first:pt-0 last:pb-0"
+                      className="py-3 flex items-center justify-between gap-4 first:pt-0 last:pb-0 transition-all duration-300 hover:translate-x-1"
                     >
 
                       <div className="flex items-center gap-3">
 
                         {item.image_url && (
-                          <div className="w-12 h-12 rounded-xl bg-white overflow-hidden relative flex-shrink-0 border border-fimiku-lightBorder">
+                          <div className="w-12 h-12 rounded-xl bg-white overflow-hidden relative flex-shrink-0 border border-fimiku-lightBorder transition-transform duration-300 hover:scale-105">
 
                             <img
                               src={
@@ -805,7 +806,7 @@ export default function CheckoutPage() {
 
           {/* SHIPPING DETAILS */}
 
-          <div className="p-4 bg-white rounded-2xl text-xs text-fimiku-secondaryText space-y-1.5 border border-fimiku-lightBorder">
+          <div className="p-4 bg-white rounded-2xl text-xs text-fimiku-secondaryText space-y-1.5 border border-fimiku-lightBorder transition-all duration-300 hover:shadow-md">
 
             <p className="font-bold text-fimiku-darkText mb-1">
               📦 Delivery Address
@@ -852,18 +853,18 @@ export default function CheckoutPage() {
 
             <Link
               href="/orders"
-              className="px-8 py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs sm:text-sm font-semibold rounded-full transition shadow-md flex items-center justify-center gap-2"
+              className="px-8 py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs sm:text-sm font-semibold rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] flex items-center justify-center gap-2 group"
             >
               <span>
                 View In My Orders
               </span>
 
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
 
             <Link
               href="/shop"
-              className="px-8 py-3.5 bg-fimiku-veryLightLavender hover:bg-fimiku-lavenderCard text-fimiku-cta text-xs sm:text-sm font-semibold rounded-full transition border border-fimiku-lightPurple/40 text-center"
+              className="px-8 py-3.5 bg-fimiku-veryLightLavender hover:bg-fimiku-lavenderCard text-fimiku-cta text-xs sm:text-sm font-semibold rounded-full transition-all duration-300 hover:shadow-md hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] border border-fimiku-lightPurple/40 text-center"
             >
               Continue Shopping
             </Link>
@@ -890,7 +891,7 @@ export default function CheckoutPage() {
 
       {/* HEADER */}
 
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder shadow-sm">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder shadow-sm transition-all duration-300 hover:shadow-md">
 
         <h1 className="text-2xl sm:text-3xl font-bold text-fimiku-darkText">
           Secure Checkout
@@ -911,7 +912,7 @@ export default function CheckoutPage() {
             SHIPPING ADDRESS
         ================================================= */}
 
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder space-y-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder space-y-6 shadow-sm transition-all duration-300 hover:shadow-md">
 
           <h3 className="font-bold text-base sm:text-lg text-fimiku-darkText">
             1. Shipping Address
@@ -934,7 +935,7 @@ export default function CheckoutPage() {
                 value={form.full_name}
                 onChange={handleChange}
                 placeholder="Parent's Name"
-                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
               />
 
             </div>
@@ -954,7 +955,7 @@ export default function CheckoutPage() {
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="10-digit mobile number"
-                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
               />
 
             </div>
@@ -976,7 +977,7 @@ export default function CheckoutPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="name@example.com"
-              className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+              className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
             />
 
           </div>
@@ -998,7 +999,7 @@ export default function CheckoutPage() {
               }
               onChange={handleChange}
               placeholder="House/Flat No, Landmark, Street name"
-              className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText resize-none"
+              className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText resize-none"
             />
 
           </div>
@@ -1020,7 +1021,7 @@ export default function CheckoutPage() {
                 value={form.city}
                 onChange={handleChange}
                 placeholder="City"
-                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
               />
 
             </div>
@@ -1038,7 +1039,7 @@ export default function CheckoutPage() {
                 value={form.state}
                 onChange={handleChange}
                 placeholder="State"
-                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
               />
 
             </div>
@@ -1058,7 +1059,7 @@ export default function CheckoutPage() {
                 }
                 onChange={handleChange}
                 placeholder="PIN"
-                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                className="w-full mt-1 p-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/20 transition-all duration-200 text-fimiku-darkText"
               />
 
             </div>
@@ -1071,7 +1072,7 @@ export default function CheckoutPage() {
             ORDER SUMMARY
         ================================================= */}
 
-        <div className="p-6 sm:p-8 bg-white rounded-3xl border border-fimiku-lightBorder shadow-card space-y-6">
+        <div className="p-6 sm:p-8 bg-white rounded-3xl border border-fimiku-lightBorder shadow-card space-y-6 transition-all duration-300 hover:shadow-xl">
 
           <h3 className="font-bold text-base sm:text-lg text-fimiku-darkText">
             2. Order Summary
@@ -1086,7 +1087,7 @@ export default function CheckoutPage() {
 
                 <div
                   key={item.id}
-                  className="py-2.5 flex justify-between items-center"
+                  className="py-2.5 flex justify-between items-center transition-all duration-200 hover:translate-x-1"
                 >
 
                   <span className="line-clamp-1 flex-1 pr-2">
@@ -1182,14 +1183,14 @@ export default function CheckoutPage() {
               onClick={() =>
                 setPaymentMethod('upi')
               }
-              className={`w-full p-4 rounded-2xl border text-left transition flex items-center gap-3 ${
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary/40 flex items-center gap-3 ${
                 paymentMethod === 'upi'
                   ? 'border-fimiku-cta bg-fimiku-veryLightLavender shadow-sm'
                   : 'border-fimiku-lightBorder bg-white hover:border-fimiku-primary'
               }`}
             >
 
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <Smartphone className="w-5 h-5 text-green-600" />
               </div>
 
@@ -1222,14 +1223,14 @@ export default function CheckoutPage() {
               onClick={() =>
                 setPaymentMethod('card')
               }
-              className={`w-full p-4 rounded-2xl border text-left transition flex items-center gap-3 ${
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary/40 flex items-center gap-3 ${
                 paymentMethod === 'card'
                   ? 'border-fimiku-cta bg-fimiku-veryLightLavender shadow-sm'
                   : 'border-fimiku-lightBorder bg-white hover:border-fimiku-primary'
               }`}
             >
 
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <CreditCard className="w-5 h-5 text-blue-600" />
               </div>
 
@@ -1262,14 +1263,14 @@ export default function CheckoutPage() {
               onClick={() =>
                 setPaymentMethod('wallet')
               }
-              className={`w-full p-4 rounded-2xl border text-left transition flex items-center gap-3 ${
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary/40 flex items-center gap-3 ${
                 paymentMethod === 'wallet'
                   ? 'border-fimiku-cta bg-fimiku-veryLightLavender shadow-sm'
                   : 'border-fimiku-lightBorder bg-white hover:border-fimiku-primary'
               }`}
             >
 
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <Wallet className="w-5 h-5 text-purple-600" />
               </div>
 
@@ -1304,7 +1305,7 @@ export default function CheckoutPage() {
                   'netbanking'
                 )
               }
-              className={`w-full p-4 rounded-2xl border text-left transition flex items-center gap-3 ${
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary/40 flex items-center gap-3 ${
                 paymentMethod ===
                 'netbanking'
                   ? 'border-fimiku-cta bg-fimiku-veryLightLavender shadow-sm'
@@ -1312,7 +1313,7 @@ export default function CheckoutPage() {
               }`}
             >
 
-              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <Landmark className="w-5 h-5 text-orange-600" />
               </div>
 
@@ -1346,14 +1347,14 @@ export default function CheckoutPage() {
               onClick={() =>
                 setPaymentMethod('cod')
               }
-              className={`w-full p-4 rounded-2xl border text-left transition flex items-center gap-3 ${
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary/40 flex items-center gap-3 ${
                 paymentMethod === 'cod'
                   ? 'border-fimiku-cta bg-fimiku-veryLightLavender shadow-sm'
                   : 'border-fimiku-lightBorder bg-white hover:border-fimiku-primary'
               }`}
             >
 
-              <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                 <Banknote className="w-5 h-5 text-yellow-600" />
               </div>
 
@@ -1425,7 +1426,7 @@ export default function CheckoutPage() {
               loading ||
               cart.items.length === 0
             }
-            className="w-full py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white font-semibold text-xs sm:text-sm rounded-full transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white font-semibold text-xs sm:text-sm rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md flex items-center justify-center gap-2"
           >
 
             {loading ? (

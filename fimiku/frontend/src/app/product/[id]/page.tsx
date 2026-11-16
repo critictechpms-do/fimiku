@@ -1,4 +1,5 @@
- 'use client';
+
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -28,7 +29,6 @@ const FEEDING_SET_IMAGES = [
 ];
 
 // Frontend fallback details for the two teether products.
-// The IDs must match the IDs used by the shop fallback cards.
 const LOCAL_TEETHER_PRODUCTS: Record<string, any> = {
   '22': {
     id: 22,
@@ -84,7 +84,14 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [failedGalleryImages, setFailedGalleryImages] = useState<string[]>([]);
 
-  const { addToCart, toggleWishlist, isInWishlist, showToast } = useCart();
+  const {
+    addToCart,
+    toggleWishlist,
+    isInWishlist,
+    showToast,
+    launchPaperRocket,
+  } = useCart();
+
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -108,8 +115,6 @@ export default function ProductDetailPage() {
       } catch (error) {
         console.error('Failed to load product details:', error);
 
-        // Show local teether details if the API does not have these IDs.
-        // Other products still require a valid backend record.
         if (mounted) {
           setProduct(LOCAL_TEETHER_PRODUCTS[productId] ?? null);
         }
@@ -181,10 +186,11 @@ export default function ProductDetailPage() {
     setActiveImage(current => (current + 1) % safeGallery.length);
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
     if (!product) return;
 
-    // Local fallback products are not guaranteed to exist in the backend.
     if (product.__localFallback || LOCAL_TEETHER_PRODUCTS[productId]) {
       showToast(
         '⚠️ This product needs to be added to the store database before checkout.'
@@ -192,11 +198,17 @@ export default function ProductDetailPage() {
       return;
     }
 
-    await addToCart(product, quantity);
-    showToast(`🛍️ Added ${quantity} item(s) to bag`);
+    const sourceButton = event.currentTarget;
+    const added = await addToCart(product, quantity);
+
+    if (added) {
+      launchPaperRocket(sourceButton, 'cart');
+    }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
     if (!product) return;
 
     if (product.__localFallback || LOCAL_TEETHER_PRODUCTS[productId]) {
@@ -206,8 +218,13 @@ export default function ProductDetailPage() {
       return;
     }
 
-    await addToCart(product, quantity);
-    router.push('/checkout');
+    const sourceButton = event.currentTarget;
+    const added = await addToCart(product, quantity);
+
+    if (added) {
+      launchPaperRocket(sourceButton, 'bag');
+      router.push('/checkout');
+    }
   };
 
   const handleReviewSubmit = async (event: React.FormEvent) => {
@@ -292,13 +309,13 @@ export default function ProductDetailPage() {
       <div className="grid md:grid-cols-2 gap-10 items-start">
         {/* Main product gallery */}
         <div className="space-y-3">
-          <div className="relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-sm">
+          <div className="group relative aspect-square rounded-3xl bg-white overflow-hidden border border-fimiku-lightBorder shadow-[0_14px_35px_rgba(91,62,145,0.10)] transition-all duration-500 [transform-style:preserve-3d] hover:-translate-y-1 hover:shadow-[0_22px_45px_rgba(91,62,145,0.18)]">
             {currentImage ? (
               <img
                 key={currentImage}
                 src={currentImage}
                 alt={`${product.name} image ${activeImage + 1}`}
-                className="absolute inset-0 h-full w-full object-contain p-8 transition-opacity duration-300"
+                className="absolute inset-0 h-full w-full object-contain p-8 transition-all duration-700 ease-out group-hover:scale-[1.045] group-hover:[transform:perspective(1000px)_rotateY(-2deg)]"
                 onError={() => handleGalleryImageError(currentImage)}
               />
             ) : (
@@ -534,18 +551,24 @@ export default function ProductDetailPage() {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="py-3.5 px-4 bg-white border border-fimiku-lightBorder text-fimiku-darkText font-semibold text-xs sm:text-sm rounded-full hover:bg-fimiku-veryLightLavender transition shadow-sm flex items-center justify-center gap-2"
+                className="group relative overflow-hidden py-3.5 px-4 bg-white border border-fimiku-lightPurple/60 text-fimiku-darkText font-semibold text-xs sm:text-sm rounded-2xl transition-all duration-200 ease-out shadow-[0_6px_0_rgba(190,170,225,0.75),0_10px_20px_rgba(91,62,145,0.10)] hover:-translate-y-1 hover:bg-fimiku-veryLightLavender hover:shadow-[0_8px_0_rgba(190,170,225,0.75),0_16px_25px_rgba(91,62,145,0.16)] active:translate-y-1 active:shadow-[0_2px_0_rgba(190,170,225,0.75),0_5px_10px_rgba(91,62,145,0.10)] flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary focus-visible:ring-offset-2"
               >
-                <ShoppingBag className="w-4 h-4 text-fimiku-cta" />
-                Add to Bag
+                <ShoppingBag className="w-4 h-4 text-fimiku-cta transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125" />
+                <span>Add to Cart</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleBuyNow}
-                className="py-3.5 px-4 bg-fimiku-cta hover:bg-fimiku-primary text-white font-semibold text-xs sm:text-sm rounded-full transition shadow-md"
+                className="group relative overflow-hidden py-3.5 px-4 bg-fimiku-cta hover:bg-fimiku-primary text-white font-bold text-xs sm:text-sm rounded-2xl transition-all duration-200 ease-out shadow-[0_6px_0_rgba(76,48,125,0.85),0_12px_22px_rgba(91,62,145,0.22)] hover:-translate-y-1 hover:shadow-[0_8px_0_rgba(76,48,125,0.85),0_18px_28px_rgba(91,62,145,0.28)] active:translate-y-1 active:shadow-[0_2px_0_rgba(76,48,125,0.85),0_5px_10px_rgba(91,62,145,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary focus-visible:ring-offset-2"
               >
-                Buy Now
+                <span className="inline-flex items-center justify-center gap-2">
+                  <ShoppingBag
+                    data-fimiku-bag-target="true"
+                    className="w-4 h-4 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125"
+                  />
+                  Buy Now
+                </span>
               </button>
             </div>
           </div>
@@ -681,10 +704,10 @@ export default function ProductDetailPage() {
           <button
             type="button"
             onClick={handleAddToCart}
-            className="py-2.5 px-5 bg-fimiku-cta hover:bg-fimiku-primary text-white font-bold text-xs rounded-full transition shadow-md flex items-center justify-center gap-1.5"
+            className="group py-2.5 px-5 bg-fimiku-cta hover:bg-fimiku-primary text-white font-bold text-xs rounded-2xl transition-all duration-200 shadow-[0_5px_0_rgba(76,48,125,0.85),0_9px_16px_rgba(91,62,145,0.18)] hover:-translate-y-1 hover:shadow-[0_7px_0_rgba(76,48,125,0.85),0_13px_20px_rgba(91,62,145,0.24)] active:translate-y-1 active:shadow-[0_2px_0_rgba(76,48,125,0.85),0_4px_8px_rgba(91,62,145,0.14)] flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary focus-visible:ring-offset-2"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Add to Bag</span>
+            <ShoppingBag className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125" />
+            <span>Add to Cart</span>
           </button>
         </div>
       </div>

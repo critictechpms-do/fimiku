@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -61,10 +62,7 @@ export default function OrdersPage() {
   const [searchEmail, setSearchEmail] = useState('');
   const [emailSearched, setEmailSearched] = useState(false);
 
-  // =========================================================
   // FETCH ORDERS
-  // =========================================================
-
   const fetchOrders = async (emailOverride?: string) => {
     setLoading(true);
 
@@ -87,18 +85,10 @@ export default function OrdersPage() {
 
       /*
        * Backend may return:
-       *
-       * [
-       *   {...}
-       * ]
-       *
-       * OR:
-       *
-       * {
-       *   results: [...]
-       * }
+       * [...]
+       * OR
+       * { results: [...] }
        */
-
       const data =
         response.data?.results ??
         response.data ??
@@ -113,17 +103,13 @@ export default function OrdersPage() {
       console.log('[Orders] Loaded:', data);
     } catch (error: any) {
       console.error('[Orders] Failed to load orders:', error);
-
       setOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================================================
   // LOAD AUTHENTICATED USER ORDERS
-  // =========================================================
-
   useEffect(() => {
     if (authLoading) {
       return;
@@ -136,10 +122,7 @@ export default function OrdersPage() {
     }
   }, [isAuthenticated, authLoading, user?.email]);
 
-  // =========================================================
   // GUEST EMAIL SEARCH
-  // =========================================================
-
   const handleGuestSearch = (
     event: React.FormEvent<HTMLFormElement>
   ) => {
@@ -152,14 +135,10 @@ export default function OrdersPage() {
     }
 
     setEmailSearched(true);
-
     fetchOrders(email);
   };
 
-  // =========================================================
   // STATUS BADGE
-  // =========================================================
-
   const getStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'DELIVERED':
@@ -204,10 +183,7 @@ export default function OrdersPage() {
     }
   };
 
-  // =========================================================
   // FORMAT MONEY
-  // =========================================================
-
   const formatMoney = (value: string | number | undefined) => {
     const amount = Number(value ?? 0);
 
@@ -218,10 +194,7 @@ export default function OrdersPage() {
     return amount.toFixed(2);
   };
 
-  // =========================================================
   // FORMAT DATE
-  // =========================================================
-
   const formatDate = (dateString: string) => {
     if (!dateString) {
       return '-';
@@ -242,10 +215,7 @@ export default function OrdersPage() {
     });
   };
 
-  // =========================================================
   // TOTAL QUANTITY
-  // =========================================================
-
   const getTotalQuantity = (items: OrderItem[] = []) => {
     return items.reduce(
       (total, item) => total + Number(item.quantity || 0),
@@ -253,18 +223,12 @@ export default function OrdersPage() {
     );
   };
 
-  // =========================================================
   // RENDER
-  // =========================================================
-
   return (
     <div className="min-h-screen bg-fimiku-softLavender py-8">
       <div className="max-w-7xl 2xl:max-w-[1720px] 3xl:max-w-[1840px] mx-auto px-4 sm:px-6 2xl:px-10 space-y-8">
 
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
-
+        {/* HEADER */}
         <div>
           <div className="flex items-center gap-2 text-xs text-fimiku-grayText mb-3">
             <Link
@@ -281,12 +245,10 @@ export default function OrdersPage() {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-fimiku-lightBorder shadow-card">
-
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-fimiku-lightBorder shadow-card transition-all duration-500 hover:shadow-floating hover:-translate-y-1">
             <div className="flex items-center gap-4">
-
-              <div className="w-14 h-14 rounded-2xl bg-fimiku-veryLightLavender flex items-center justify-center border border-fimiku-lightPurple/40">
-                <Package className="w-7 h-7 text-fimiku-cta" />
+              <div className="w-14 h-14 rounded-2xl bg-fimiku-veryLightLavender flex items-center justify-center border border-fimiku-lightPurple/40 transition-all duration-500 hover:scale-110 hover:-rotate-6 hover:shadow-md">
+                <Package className="w-7 h-7 text-fimiku-cta transition-transform duration-300 hover:scale-110" />
               </div>
 
               <div>
@@ -299,14 +261,13 @@ export default function OrdersPage() {
                   and see your complete order history
                 </p>
               </div>
-
             </div>
 
             {isAuthenticated && (
               <button
                 onClick={() => fetchOrders(user?.email)}
                 disabled={loading}
-                className="px-4 py-2 bg-fimiku-veryLightLavender hover:bg-fimiku-lavenderCard text-fimiku-cta text-xs font-semibold rounded-full border border-fimiku-lightPurple/30 transition flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-50"
+                className="px-4 py-2 bg-fimiku-veryLightLavender hover:bg-fimiku-lavenderCard text-fimiku-cta text-xs font-semibold rounded-full border border-fimiku-lightPurple/30 transition-all duration-300 flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-cta"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 ${
@@ -320,15 +281,10 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* =====================================================
-            GUEST EMAIL SEARCH
-        ====================================================== */}
-
+        {/* GUEST EMAIL SEARCH */}
         {!isAuthenticated && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder shadow-sm space-y-4">
-
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder shadow-sm space-y-4 transition-all duration-300 hover:shadow-floating hover:-translate-y-1">
             <div className="max-w-xl">
-
               <h2 className="text-base sm:text-lg font-bold text-fimiku-darkText">
                 Track Orders by Email Address
               </h2>
@@ -337,17 +293,14 @@ export default function OrdersPage() {
                 Placed an order as a guest? Enter the same email
                 address used during checkout to see your purchases.
               </p>
-
             </div>
 
             <form
               onSubmit={handleGuestSearch}
               className="flex flex-col sm:flex-row gap-3 max-w-xl"
             >
-
               <div className="relative flex-1">
-
-                <Search className="w-4 h-4 text-fimiku-grayText absolute left-3.5 top-3.5" />
+                <Search className="w-4 h-4 text-fimiku-grayText absolute left-3.5 top-3.5 transition-transform duration-300" />
 
                 <input
                   type="email"
@@ -357,59 +310,45 @@ export default function OrdersPage() {
                     setSearchEmail(event.target.value)
                   }
                   placeholder="Enter order email address"
-                  className="w-full pl-10 pr-4 py-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-2xl text-xs focus:outline-none focus:border-fimiku-primary text-fimiku-darkText"
+                  className="w-full pl-10 pr-4 py-3 bg-fimiku-softLavender border border-fimiku-lightBorder rounded-2xl text-xs focus:outline-none focus:border-fimiku-primary focus:ring-2 focus:ring-fimiku-primary/10 text-fimiku-darkText transition-all duration-300"
                 />
-
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs font-semibold rounded-2xl transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="px-6 py-3 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs font-semibold rounded-2xl transition-all duration-300 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-md active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-cta focus-visible:ring-offset-2"
               >
                 <span>Find Orders</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </button>
-
             </form>
           </div>
         )}
 
-        {/* =====================================================
-            LOADING
-        ====================================================== */}
-
+        {/* LOADING */}
         {loading ? (
           <div className="space-y-6">
-
             {[1, 2].map((item) => (
               <div
                 key={item}
                 className="bg-white rounded-3xl p-6 sm:p-8 border border-fimiku-lightBorder animate-pulse space-y-4"
               >
                 <div className="h-6 bg-fimiku-veryLightLavender rounded w-1/4" />
-
                 <div className="h-20 bg-fimiku-veryLightLavender rounded-2xl" />
-
                 <div className="h-4 bg-fimiku-veryLightLavender rounded w-1/2" />
               </div>
             ))}
-
           </div>
         ) : orders.length === 0 ? (
 
-          /* ===================================================
-             EMPTY STATE
-          ==================================================== */
-
-          <div className="bg-white rounded-3xl border border-fimiku-lightBorder p-12 text-center max-w-2xl mx-auto shadow-card space-y-6">
-
-            <div className="w-20 h-20 bg-fimiku-veryLightLavender rounded-full flex items-center justify-center mx-auto text-fimiku-cta border border-fimiku-lightPurple/30">
-              <ShoppingBag className="w-10 h-10 text-fimiku-cta" />
+          /* EMPTY STATE */
+          <div className="bg-white rounded-3xl border border-fimiku-lightBorder p-12 text-center max-w-2xl mx-auto shadow-card space-y-6 transition-all duration-500 hover:shadow-floating hover:-translate-y-1">
+            <div className="w-20 h-20 bg-fimiku-veryLightLavender rounded-full flex items-center justify-center mx-auto text-fimiku-cta border border-fimiku-lightPurple/30 transition-all duration-500 hover:scale-110 hover:rotate-6 hover:shadow-lg">
+              <ShoppingBag className="w-10 h-10 text-fimiku-cta transition-transform duration-500 hover:scale-110" />
             </div>
 
             <div className="space-y-2">
-
               <h2 className="text-xl sm:text-2xl font-bold text-fimiku-darkText">
                 {emailSearched
                   ? 'No orders found for this email'
@@ -421,33 +360,24 @@ export default function OrdersPage() {
                   ? 'Please verify the email address used during checkout.'
                   : "You haven't placed any orders with Fimiku yet. Explore our gentle food-grade silicone collection."}
               </p>
-
             </div>
 
             <div className="pt-2">
-
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs sm:text-sm font-semibold rounded-full transition shadow-md"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-fimiku-cta hover:bg-fimiku-primary text-white text-xs sm:text-sm font-semibold rounded-full transition-all duration-300 shadow-md hover:-translate-y-1 hover:shadow-lg active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-cta focus-visible:ring-offset-2"
               >
                 <span>Explore All Toys</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
-
             </div>
-
           </div>
 
         ) : (
 
-          /* ===================================================
-             ORDERS
-          ==================================================== */
-
+          /* ORDERS */
           <div className="space-y-6">
-
             {orders.map((order) => {
-
               const items = Array.isArray(order.items)
                 ? order.items
                 : [];
@@ -457,22 +387,16 @@ export default function OrdersPage() {
               return (
                 <div
                   key={order.id}
-                  className="bg-white rounded-3xl border border-fimiku-lightBorder shadow-card overflow-hidden transition hover:border-fimiku-lightPurple/50"
+                  className="bg-white rounded-3xl border border-fimiku-lightBorder shadow-card overflow-hidden transition-all duration-300 hover:border-fimiku-lightPurple/50 hover:shadow-floating hover:-translate-y-1 motion-reduce:transform-none"
                 >
 
-                  {/* =================================================
-                      ORDER HEADER
-                  ================================================== */}
-
+                  {/* ORDER HEADER */}
                   <div className="p-6 bg-fimiku-softLavender/60 border-b border-fimiku-lightBorder">
-
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-
                       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
 
                         {/* ORDER ID */}
-
-                        <div>
+                        <div className="transition-transform duration-300 hover:translate-y-[-2px]">
                           <span className="text-fimiku-grayText text-[11px] block">
                             Order Reference
                           </span>
@@ -483,8 +407,7 @@ export default function OrdersPage() {
                         </div>
 
                         {/* DATE */}
-
-                        <div>
+                        <div className="transition-transform duration-300 hover:translate-y-[-2px]">
                           <span className="text-fimiku-grayText text-[11px] block">
                             Date Placed
                           </span>
@@ -495,8 +418,7 @@ export default function OrdersPage() {
                         </div>
 
                         {/* TOTAL ITEMS */}
-
-                        <div>
+                        <div className="transition-transform duration-300 hover:translate-y-[-2px]">
                           <span className="text-fimiku-grayText text-[11px] block">
                             Products
                           </span>
@@ -507,8 +429,7 @@ export default function OrdersPage() {
                         </div>
 
                         {/* TOTAL QUANTITY */}
-
-                        <div>
+                        <div className="transition-transform duration-300 hover:translate-y-[-2px]">
                           <span className="text-fimiku-grayText text-[11px] block">
                             Total Quantity
                           </span>
@@ -520,8 +441,7 @@ export default function OrdersPage() {
                         </div>
 
                         {/* TOTAL AMOUNT */}
-
-                        <div>
+                        <div className="transition-transform duration-300 hover:translate-y-[-2px]">
                           <span className="text-fimiku-grayText text-[11px] block">
                             Total Amount
                           </span>
@@ -530,28 +450,19 @@ export default function OrdersPage() {
                             ₹{formatMoney(order.total_amount)}
                           </span>
                         </div>
-
                       </div>
 
                       {/* STATUS */}
-
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 transition-transform duration-300 hover:scale-105">
                         {getStatusBadge(order.order_status)}
                       </div>
-
                     </div>
                   </div>
 
-                  {/* =================================================
-                      ORDER ITEMS
-                  ================================================== */}
-
+                  {/* ORDER ITEMS */}
                   <div className="p-6 sm:p-8 space-y-6">
-
                     <div>
-
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-
                         <h3 className="font-bold text-sm text-fimiku-darkText">
                           Items in this order
                         </h3>
@@ -560,51 +471,41 @@ export default function OrdersPage() {
                           {totalQuantity} total item
                           {totalQuantity !== 1 ? 's' : ''}
                         </span>
-
                       </div>
 
                       <div className="divide-y divide-fimiku-lightBorder/80">
-
                         {items.map((item) => (
-
                           <div
                             key={item.id}
-                            className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0"
+                            className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0 transition-colors duration-300 hover:bg-fimiku-softLavender/20"
                           >
 
                             {/* PRODUCT */}
-
                             <div className="flex items-center gap-4 min-w-0">
 
                               {/* IMAGE */}
-
-                              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-fimiku-veryLightLavender rounded-2xl overflow-hidden flex-shrink-0 border border-fimiku-lightBorder">
-
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-fimiku-veryLightLavender rounded-2xl overflow-hidden flex-shrink-0 border border-fimiku-lightBorder transition-all duration-300 hover:scale-105 hover:shadow-md">
                                 {item.image_url ? (
                                   <img
                                     src={item.image_url}
                                     alt={item.product_name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
-                                    <Package className="w-8 h-8 text-fimiku-cta/40" />
+                                    <Package className="w-8 h-8 text-fimiku-cta/40 transition-transform duration-300 hover:scale-110" />
                                   </div>
                                 )}
-
                               </div>
 
                               {/* PRODUCT DETAILS */}
-
                               <div className="space-y-1.5 min-w-0">
-
                                 <h4 className="font-bold text-xs sm:text-sm text-fimiku-darkText">
                                   {item.product_name}
                                 </h4>
 
                                 {/* QUANTITY */}
-
-                                <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-fimiku-veryLightLavender rounded-lg">
+                                <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-fimiku-veryLightLavender rounded-lg transition-transform duration-300 hover:scale-105">
                                   <span className="text-[11px] text-fimiku-secondaryText">
                                     Quantity
                                   </span>
@@ -615,21 +516,15 @@ export default function OrdersPage() {
                                 </div>
 
                                 {/* PRICE */}
-
                                 <p className="text-xs font-semibold text-fimiku-darkText">
                                   ₹{formatMoney(item.price)} each
                                 </p>
-
                               </div>
-
                             </div>
 
                             {/* SUBTOTAL */}
-
                             <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end justify-between gap-2">
-
                               <div>
-
                                 <span className="text-[10px] text-fimiku-grayText block">
                                   Item Subtotal
                                 </span>
@@ -637,35 +532,25 @@ export default function OrdersPage() {
                                 <span className="font-bold text-base text-fimiku-darkText">
                                   ₹{formatMoney(item.subtotal)}
                                 </span>
-
                               </div>
 
                               {item.product && (
                                 <Link
                                   href={`/product/${item.product}`}
-                                  className="text-[11px] font-semibold text-fimiku-cta hover:underline"
+                                  className="text-[11px] font-semibold text-fimiku-cta hover:underline transition-all duration-300 hover:translate-x-1"
                                 >
                                   View Product
                                 </Link>
                               )}
-
                             </div>
-
                           </div>
-
                         ))}
-
                       </div>
                     </div>
 
-                    {/* =================================================
-                        ORDER SUMMARY
-                    ================================================== */}
-
+                    {/* ORDER SUMMARY */}
                     <div className="border-t border-fimiku-lightBorder pt-5">
-
                       <div className="ml-auto max-w-sm space-y-2">
-
                         <div className="flex justify-between text-xs text-fimiku-secondaryText">
                           <span>Total products</span>
                           <span>{items.length}</span>
@@ -686,43 +571,31 @@ export default function OrdersPage() {
                         )}
 
                         <div className="flex justify-between items-center border-t border-fimiku-lightBorder pt-3">
-
                           <span className="font-bold text-sm text-fimiku-darkText">
                             Order Total
                           </span>
 
-                          <span className="font-bold text-lg text-fimiku-cta">
+                          <span className="font-bold text-lg text-fimiku-cta transition-transform duration-300 hover:scale-105">
                             ₹{formatMoney(order.total_amount)}
                           </span>
-
                         </div>
-
                       </div>
-
                     </div>
 
-                    {/* =================================================
-                        DELIVERY + PAYMENT
-                    ================================================== */}
-
+                    {/* DELIVERY + PAYMENT */}
                     <div className="pt-6 border-t border-fimiku-lightBorder grid sm:grid-cols-2 gap-6 text-xs bg-fimiku-softLavender/40 p-4 rounded-2xl">
 
                       {/* DELIVERY */}
-
-                      <div className="space-y-1.5">
-
+                      <div className="space-y-1.5 transition-transform duration-300 hover:translate-y-[-2px]">
                         <div className="flex items-center gap-1.5 font-bold text-fimiku-darkText">
-
-                          <MapPin className="w-3.5 h-3.5 text-fimiku-cta" />
+                          <MapPin className="w-3.5 h-3.5 text-fimiku-cta transition-transform duration-300 hover:scale-125" />
 
                           <span>
                             Delivery Address
                           </span>
-
                         </div>
 
                         <p className="text-fimiku-secondaryText leading-relaxed">
-
                           <strong>
                             {order.full_name}
                           </strong>
@@ -738,27 +611,20 @@ export default function OrdersPage() {
                           <br />
 
                           Phone: {order.phone}
-
                         </p>
-
                       </div>
 
                       {/* PAYMENT */}
-
-                      <div className="space-y-1.5">
-
+                      <div className="space-y-1.5 transition-transform duration-300 hover:translate-y-[-2px]">
                         <div className="flex items-center gap-1.5 font-bold text-fimiku-darkText">
-
-                          <ShieldCheck className="w-3.5 h-3.5 text-fimiku-cta" />
+                          <ShieldCheck className="w-3.5 h-3.5 text-fimiku-cta transition-transform duration-300 hover:scale-125" />
 
                           <span>
                             Payment & Security
                           </span>
-
                         </div>
 
                         <p className="text-fimiku-secondaryText leading-relaxed">
-
                           Status:{' '}
 
                           <strong className="text-emerald-600">
@@ -778,22 +644,15 @@ export default function OrdersPage() {
                           <br />
 
                           Express Delivery: Free Across India
-
                         </p>
-
                       </div>
-
                     </div>
-
                   </div>
-
                 </div>
               );
             })}
-
           </div>
         )}
-
       </div>
     </div>
   );

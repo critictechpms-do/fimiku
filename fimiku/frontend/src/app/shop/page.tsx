@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -296,7 +297,12 @@ function ShopContent() {
   const [search, setSearch] = useState(sp.get('search') || '');
   const [sort, setSort] = useState('');
 
-  const { addToCart, toggleWishlist, isInWishlist } = useCart();
+  const {
+    addToCart,
+    launchPaperRocket,
+    toggleWishlist,
+    isInWishlist,
+  } = useCart();
 
   useEffect(() => {
     setCat(sp.get('category') || '');
@@ -451,18 +457,18 @@ function ShopContent() {
             return (
               <div
                 key={getProductKey(product)}
-                className="bg-white rounded-3xl p-4 border shadow-sm"
+                className="group relative bg-white rounded-3xl p-4 border border-fimiku-lightBorder shadow-[0_8px_22px_rgba(91,62,145,0.08)] transition-all duration-300 ease-out hover:-translate-y-2 hover:border-fimiku-lightPurple hover:shadow-[0_18px_38px_rgba(91,62,145,0.18)] [transform-style:preserve-3d]"
               >
                 <Link href={`/product/${product.id}`}>
-                  <div className="relative aspect-square rounded-2xl bg-fimiku-softLavender overflow-hidden">
+                  <div className="relative aspect-square rounded-2xl bg-fimiku-softLavender overflow-hidden [transform:translateZ(0)]">
                     <img
                       src={getProductImage(product)}
                       alt={product.name}
-                      className="w-full h-full object-cover hover:scale-105 transition"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:rotate-[1deg]"
                     />
                   </div>
 
-                  <h3 className="font-bold text-sm mt-3 text-fimiku-darkText">
+                  <h3 className="font-bold text-sm mt-3 text-fimiku-darkText transition-colors duration-300 group-hover:text-fimiku-cta">
                     {product.name}
                   </h3>
                 </Link>
@@ -494,23 +500,29 @@ function ShopContent() {
                   </div>
 
                   <button
-                    onClick={() => addToCart(product, 1)}
-                    className="p-2.5 rounded-2xl bg-fimiku-veryLightLavender text-fimiku-cta"
+                    onClick={async event => {
+                      const sourceButton = event.currentTarget;
+
+                      await addToCart(product, 1);
+
+                      launchPaperRocket(sourceButton, 'cart');
+                    }}
+                    className="group/bag relative overflow-hidden p-2.5 rounded-2xl bg-fimiku-veryLightLavender text-fimiku-cta border border-fimiku-lightPurple/40 shadow-[0_4px_0_rgba(190,170,225,0.65)] transition-all duration-200 hover:-translate-y-1 hover:bg-fimiku-cta hover:text-white hover:shadow-[0_6px_0_rgba(76,48,125,0.45)] active:translate-y-1 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary focus-visible:ring-offset-2"
                     aria-label={`Add ${product.name} to cart`}
                   >
-                    <ShoppingBag className="w-4 h-4" />
+                    <ShoppingBag className="w-4 h-4 transition-transform duration-300 group-hover/bag:-rotate-12 group-hover/bag:scale-125" />
                   </button>
 
                   <button
                     onClick={() => toggleWishlist(product)}
-                    className="p-2"
+                    className="group/heart p-2 rounded-xl transition-all duration-200 hover:bg-pink-50 hover:-translate-y-0.5 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
                     aria-label={`Add ${product.name} to wishlist`}
                   >
                     <Heart
-                      className={`w-4 h-4 ${
+                      className={`w-4 h-4 transition-all duration-300 group-hover/heart:scale-125 group-hover/heart:-rotate-6 ${
                         isInWishlist(product.id)
-                          ? 'text-red-500 fill-current'
-                          : ''
+                          ? 'text-red-500 fill-current scale-110'
+                          : 'text-fimiku-grayText'
                       }`}
                     />
                   </button>
