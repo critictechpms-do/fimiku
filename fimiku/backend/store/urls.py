@@ -21,9 +21,18 @@ from .views import (
     AdminStatsView,
 )
 
+# Admin panel views
+from .admin_views import (
+    AdminTokenObtainPairView,
+    admin_dashboard_stats,
+)
+
 
 urlpatterns = [
-    # Auth endpoints
+    # ==========================================
+    # CUSTOMER AUTHENTICATION
+    # ==========================================
+
     path(
         'auth/register/',
         RegisterView.as_view(),
@@ -48,7 +57,37 @@ urlpatterns = [
         name='me'
     ),
 
-    # Catalog endpoints
+    # ==========================================
+    # ADMIN AUTHENTICATION
+    # ==========================================
+
+    path(
+        'admin/token/',
+        AdminTokenObtainPairView.as_view(),
+        name='admin_token'
+    ),
+
+    # ==========================================
+    # ADMIN DASHBOARD
+    # ==========================================
+
+    path(
+        'admin/dashboard/stats/',
+        admin_dashboard_stats,
+        name='admin_dashboard_stats'
+    ),
+
+    # Existing admin statistics endpoint
+    path(
+        'admin-stats/',
+        AdminStatsView.as_view(),
+        name='admin_stats'
+    ),
+
+    # ==========================================
+    # PRODUCT CATALOG
+    # ==========================================
+
     path(
         'categories/',
         CategoryListView.as_view(),
@@ -67,7 +106,10 @@ urlpatterns = [
         name='product_detail'
     ),
 
-    # Cart & Wishlist
+    # ==========================================
+    # CART & WISHLIST
+    # ==========================================
+
     path(
         'cart/',
         CartView.as_view(),
@@ -86,7 +128,10 @@ urlpatterns = [
         name='coupon_validate'
     ),
 
-    # Orders & Payments
+    # ==========================================
+    # PAYMENTS
+    # ==========================================
+
     path(
         'payment/create-order/',
         CreateRazorpayOrderView.as_view(),
@@ -105,6 +150,10 @@ urlpatterns = [
         name='verify_payment'
     ),
 
+    # ==========================================
+    # ORDERS
+    # ==========================================
+
     path(
         'orders/',
         OrderListView.as_view(),
@@ -117,7 +166,10 @@ urlpatterns = [
         name='order_detail'
     ),
 
-    # Reviews & AI
+    # ==========================================
+    # REVIEWS & AI
+    # ==========================================
+
     path(
         'reviews/',
         ReviewCreateView.as_view(),
@@ -128,12 +180,5 @@ urlpatterns = [
         'ai/assistant/',
         AIAssistantView.as_view(),
         name='ai_assistant'
-    ),
-
-    # Admin Stats
-    path(
-        'admin-stats/',
-        AdminStatsView.as_view(),
-        name='admin_stats'
     ),
 ]
