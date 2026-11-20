@@ -1,3 +1,4 @@
+
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -25,10 +26,18 @@ from .views import (
 from .admin_views import (
     AdminTokenObtainPairView,
     admin_dashboard_stats,
+    admin_account_settings,
+
+    # Product management
+    AdminProductListCreateView,
+    AdminProductDetailView,
+    AdminCategoryListView,
+    admin_check_sku,
 )
 
 
 urlpatterns = [
+
     # ==========================================
     # CUSTOMER AUTHENTICATION
     # ==========================================
@@ -77,7 +86,52 @@ urlpatterns = [
         name='admin_dashboard_stats'
     ),
 
-    # Existing admin statistics endpoint
+    # ==========================================
+    # ADMIN ACCOUNT SETTINGS
+    # ==========================================
+
+    path(
+        'admin/account/',
+        admin_account_settings,
+        name='admin_account_settings'
+    ),
+
+    # ==========================================
+    # ADMIN PRODUCT MANAGEMENT
+    # ==========================================
+
+    # List all products / create product
+    path(
+        'admin/products/',
+        AdminProductListCreateView.as_view(),
+        name='admin_products'
+    ),
+
+    # Retrieve / update / delete product
+    path(
+        'admin/products/<str:id>/',
+        AdminProductDetailView.as_view(),
+        name='admin_product_detail'
+    ),
+
+    # Admin category list
+    path(
+        'admin/categories/',
+        AdminCategoryListView.as_view(),
+        name='admin_categories'
+    ),
+
+    # SKU availability check
+    path(
+        'admin/products/check-sku/',
+        admin_check_sku,
+        name='admin_check_sku'
+    ),
+
+    # ==========================================
+    # EXISTING ADMIN STATISTICS
+    # ==========================================
+
     path(
         'admin-stats/',
         AdminStatsView.as_view(),
@@ -85,7 +139,7 @@ urlpatterns = [
     ),
 
     # ==========================================
-    # PRODUCT CATALOG
+    # PUBLIC PRODUCT CATALOG
     # ==========================================
 
     path(

@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import adminApi from "@/lib/axiosAdmin";
 import {
   Package,
@@ -13,6 +15,8 @@ import {
   Clock,
   XCircle,
   Layers,
+  Plus,
+  List,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -40,6 +44,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   // Fetch dashboard statistics
   const fetchStats = async () => {
@@ -63,8 +68,9 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Load statistics when page opens
+  // Mount the component and fetch dashboard data
   useEffect(() => {
+    setMounted(true);
     fetchStats();
   }, []);
 
@@ -111,6 +117,28 @@ export default function AdminDashboardPage() {
       ]
     : [];
 
+  // Prevent server/client hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex min-h-[300px] items-center justify-center">
+            <div className="text-center">
+              <RefreshCw
+                size={32}
+                className="mx-auto animate-spin text-purple-600"
+              />
+
+              <p className="mt-4 text-gray-500">
+                Loading admin dashboard...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
@@ -141,12 +169,44 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
+        {/* Product Management */}
+        <div className="mb-8 rounded-2xl border border-purple-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Product Management
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Add new products, manage your catalogue, update prices and stock.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/admin/products"
+                className="flex items-center justify-center gap-2 rounded-lg border border-purple-200 bg-white px-4 py-3 font-medium text-purple-700 transition hover:bg-purple-50"
+              >
+                <List size={18} />
+                Manage Products
+              </Link>
+
+              <Link
+                href="/admin/products/new"
+                className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 font-medium text-white transition hover:bg-purple-700"
+              >
+                <Plus size={18} />
+                Add Product
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
             <div className="flex items-center gap-2">
               <AlertTriangle size={20} />
-
               <span>{error}</span>
             </div>
           </div>
@@ -189,9 +249,7 @@ export default function AdminDashboardPage() {
                         </h2>
                       </div>
 
-                      <div
-                        className={`rounded-lg p-3 ${card.bg}`}
-                      >
+                      <div className={`rounded-lg p-3 ${card.bg}`}>
                         <Icon
                           size={24}
                           className={card.color}
