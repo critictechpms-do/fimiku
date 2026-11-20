@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -14,6 +13,21 @@ const REMOVED_PRODUCT_NAME = 'pastel geometric silicone stacking tower';
 
 const FALLBACK_PRODUCTS: ProductType[] = [
   {
+    id: 16 as any,
+    name: 'Silicon Foldable Basket',
+    slug: 'silicon-foldable-basket',
+    price: '2200.00',
+    discount_price: '1089.34',
+    final_price: '1089.34',
+    category_name: 'Bath Toys',
+    stock: 33,
+    is_in_stock: true,
+    description: 'A practical foldable silicone basket designed for convenient everyday use.',
+    material: 'Silicone',
+    target_age: 'Babies',
+    features: ['Foldable design', 'Easy to store', 'Durable silicone'],
+  } as ProductType,
+  {
     id: 13 as any,
     name: '3 in 1 Pet slow feeder bowl',
     slug: '3-in-1-pet-slow-feeder-bowl',
@@ -28,7 +42,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     material: 'Silicone',
     target_age: 'Pets',
     features: ['Slow feeding', 'Easy to clean'],
-  },
+  } as ProductType,
   {
     id: 14 as any,
     name: 'Dish Drying Mat',
@@ -44,7 +58,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     material: 'Silicone',
     target_age: '',
     features: ['Reusable', 'Easy to clean'],
-  },
+  } as ProductType,
   {
     id: 15 as any,
     name: 'Baby Feeding Set',
@@ -60,7 +74,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     material: 'Silicone',
     target_age: '6 months+',
     features: ['Easy to clean', 'Reusable'],
-  },
+  } as ProductType,
   {
     id: 22 as any,
     name: 'Pet Teether',
@@ -74,7 +88,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     material: 'Silicone',
     target_age: 'Pets',
     features: ['Bone-shaped design', 'Textured surface'],
-  },
+  } as ProductType,
   {
     id: 23 as any,
     name: 'Baby Teether',
@@ -88,7 +102,7 @@ const FALLBACK_PRODUCTS: ProductType[] = [
     material: 'Silicone',
     target_age: 'Babies',
     features: ['Star-shaped design', 'Textured surface'],
-  },
+  } as ProductType,
 ];
 
 const CATEGORIES: [string, string][] = [
@@ -132,11 +146,6 @@ function getProductKey(product: any): string {
   return `id:${String(product?.id ?? '')}`;
 }
 
-/**
- * Keep all valid API products and restore missing fallback products.
- * The API record takes priority over its matching fallback.
- * The removed stacking tower is excluded from every source.
- */
 function mergeAndDeduplicateProducts(
   fallbackProducts: ProductType[],
   liveProducts: ProductType[]
@@ -144,61 +153,41 @@ function mergeAndDeduplicateProducts(
   const result: ProductType[] = [];
 
   const matchesExisting = (candidate: any, existing: any): boolean => {
+    if (
+      candidate?.id != null &&
+      existing?.id != null &&
+      String(candidate.id) === String(existing.id)
+    ) {
+      return true;
+    }
+
     const candidateSku = normalize(candidate?.sku);
     const existingSku = normalize(existing?.sku);
-
-    if (
-      candidateSku &&
-      existingSku &&
-      candidateSku === existingSku
-    ) {
+    if (candidateSku && existingSku && candidateSku === existingSku) {
       return true;
     }
 
     const candidateSlug = normalize(candidate?.slug);
     const existingSlug = normalize(existing?.slug);
-
-    if (
-      candidateSlug &&
-      existingSlug &&
-      candidateSlug === existingSlug
-    ) {
+    if (candidateSlug && existingSlug && candidateSlug === existingSlug) {
       return true;
     }
 
     const candidateName = normalizeName(candidate?.name);
     const existingName = normalizeName(existing?.name);
-
-    return Boolean(
-      candidateName &&
-      existingName &&
-      candidateName === existingName
-    );
+    return Boolean(candidateName && existingName && candidateName === existingName);
   };
 
-  const fallbacks = fallbackProducts.filter(
-    product => !isRemovedProduct(product)
-  );
-
-  const live = liveProducts.filter(
-    product => !isRemovedProduct(product)
-  );
+  const fallbacks = fallbackProducts.filter(product => !isRemovedProduct(product));
+  const live = liveProducts.filter(product => !isRemovedProduct(product));
 
   for (const product of fallbacks) {
-    const index = result.findIndex(existing =>
-      matchesExisting(product, existing)
-    );
-
-    if (index === -1) {
-      result.push(product);
-    }
+    const index = result.findIndex(existing => matchesExisting(product, existing));
+    if (index === -1) result.push(product);
   }
 
   for (const product of live) {
-    const index = result.findIndex(existing =>
-      matchesExisting(product, existing)
-    );
-
+    const index = result.findIndex(existing => matchesExisting(product, existing));
     if (index === -1) {
       result.push(product);
     } else {
@@ -207,102 +196,63 @@ function mergeAndDeduplicateProducts(
   }
 
   const seen = new Set<string>();
-
   return result.filter(product => {
     if (isRemovedProduct(product)) return false;
 
     const key = getProductKey(product);
-
-    if (!key || key === 'id:' || seen.has(key)) {
-      return false;
-    }
+    if (!key || key === 'id:' || seen.has(key)) return false;
 
     seen.add(key);
     return true;
   });
 }
 
-function match(
-  product: any,
-  category: string,
-  query: string
-): boolean {
+function match(product: any, category: string, query: string): boolean {
   const name = normalize(product?.name);
-  const categoryName = normalize(
-    product?.category_name ?? product?.category?.name
-  );
-  const categorySlug = normalize(
-    product?.category_slug ?? product?.category?.slug
-  );
+  const categoryName = normalize(product?.category_name ?? product?.category?.name);
+  const categorySlug = normalize(product?.category_slug ?? product?.category?.slug);
   const slug = normalize(product?.slug);
   const sku = normalize(product?.sku);
 
   if (query.trim()) {
-    const searchable =
-      `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
-
-    if (!searchable.includes(normalize(query))) {
-      return false;
-    }
+    const searchable = `${name} ${categoryName} ${categorySlug} ${slug} ${sku}`;
+    if (!searchable.includes(normalize(query))) return false;
   }
 
   if (!category) return true;
 
   const aliases: Record<string, string[]> = {
     teethers: ['teether', 'teething'],
-    bath: ['bath'],
+    bath: ['bath', 'foldable', 'basket', 'tub'],
     feeding: ['feeding'],
     sensory: ['sensory', 'stacking'],
     'baby-play': ['baby play', 'play', 'baby'],
     kitchen: ['kitchen', 'mat'],
   };
 
-  const searchable =
-    `${name} ${categoryName} ${categorySlug} ${slug}`;
-
-  return (aliases[category] ?? [category]).some(alias =>
-    searchable.includes(alias)
-  );
+  const searchable = `${name} ${categoryName} ${categorySlug} ${slug}`;
+  return (aliases[category] ?? [category]).some(alias => searchable.includes(alias));
 }
 
-function sortProducts(
-  items: ProductType[],
-  sort: string
-): ProductType[] {
+function sortProducts(items: ProductType[], sort: string): ProductType[] {
   const result = [...items];
+  const getPrice = (product: any) => Number(product?.final_price ?? product?.discount_price ?? product?.price ?? 0);
 
-  const getPrice = (product: any) =>
-    Number(
-      product?.final_price ??
-      product?.discount_price ??
-      product?.price ??
-      0
-    );
-
-  if (sort === 'price_low') {
-    result.sort((a, b) => getPrice(a) - getPrice(b));
-  } else if (sort === 'price_high') {
-    result.sort((a, b) => getPrice(b) - getPrice(a));
-  }
+  if (sort === 'price_low') result.sort((a, b) => getPrice(a) - getPrice(b));
+  else if (sort === 'price_high') result.sort((a, b) => getPrice(b) - getPrice(a));
 
   return result;
 }
 
 function ShopContent() {
   const sp = useSearchParams();
-
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState(sp.get('category') || '');
   const [search, setSearch] = useState(sp.get('search') || '');
   const [sort, setSort] = useState('');
 
-  const {
-    addToCart,
-    launchPaperRocket,
-    toggleWishlist,
-    isInWishlist,
-  } = useCart();
+  const { addToCart, launchPaperRocket, toggleWishlist, isInWishlist } = useCart();
 
   useEffect(() => {
     setCat(sp.get('category') || '');
@@ -320,38 +270,24 @@ function ShopContent() {
         const raw = response.data?.results ?? response.data;
         const live: ProductType[] = Array.isArray(raw) ? raw : [];
 
-        const merged = mergeAndDeduplicateProducts(
-          FALLBACK_PRODUCTS,
-          live
-        );
+        const merged = mergeAndDeduplicateProducts(FALLBACK_PRODUCTS, live);
+        const filtered = merged.filter(product => match(product, cat, search));
 
-        const filtered = merged.filter(product =>
-          match(product, cat, search)
-        );
-
-        if (!cancelled) {
-          setProducts(sortProducts(filtered, sort));
-        }
+        if (!cancelled) setProducts(sortProducts(filtered, sort));
       } catch (error) {
         console.error('Failed to load products:', error);
 
-        const fallback = mergeAndDeduplicateProducts(
-          FALLBACK_PRODUCTS,
-          []
-        ).filter(product => match(product, cat, search));
+        const fallback = mergeAndDeduplicateProducts(FALLBACK_PRODUCTS, []).filter(product =>
+          match(product, cat, search)
+        );
 
-        if (!cancelled) {
-          setProducts(sortProducts(fallback, sort));
-        }
+        if (!cancelled) setProducts(sortProducts(fallback, sort));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     loadProducts();
-
     return () => {
       cancelled = true;
     };
@@ -365,11 +301,9 @@ function ShopContent() {
             <span className="text-xs uppercase tracking-wider text-fimiku-cta font-bold">
               100% Food-Grade Silicone
             </span>
-
             <h1 className="text-3xl font-bold text-fimiku-darkText mt-1">
               Baby &amp; Child Essentials
             </h1>
-
             <p className="text-sm text-fimiku-secondaryText">
               Safe toys, feeding essentials and sensory play.
             </p>
@@ -378,7 +312,6 @@ function ShopContent() {
           <div className="flex gap-3">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-fimiku-grayText" />
-
               <input
                 value={search}
                 onChange={event => setSearch(event.target.value)}
@@ -386,7 +319,6 @@ function ShopContent() {
                 className="pl-9 pr-4 py-2.5 rounded-full border text-xs"
               />
             </div>
-
             <select
               value={sort}
               onChange={event => setSort(event.target.value)}
@@ -403,9 +335,7 @@ function ShopContent() {
           <button
             onClick={() => setCat('')}
             className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${
-              !cat
-                ? 'bg-fimiku-cta text-white'
-                : 'bg-fimiku-softLavender border'
+              !cat ? 'bg-fimiku-cta text-white' : 'bg-fimiku-softLavender border'
             }`}
           >
             All Toys ({products.length})
@@ -416,9 +346,7 @@ function ShopContent() {
               key={slug}
               onClick={() => setCat(slug)}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${
-                cat === slug
-                  ? 'bg-fimiku-cta text-white'
-                  : 'bg-fimiku-softLavender border'
+                cat === slug ? 'bg-fimiku-cta text-white' : 'bg-fimiku-softLavender border'
               }`}
             >
               {name}
@@ -428,13 +356,10 @@ function ShopContent() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center">
-          Loading products...
-        </div>
+        <div className="py-20 text-center">Loading products...</div>
       ) : products.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-3xl">
           <p className="font-bold">No products found</p>
-
           <button
             onClick={() => {
               setCat('');
@@ -448,11 +373,7 @@ function ShopContent() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {products.map(product => {
-            const price =
-              (product as any).final_price ??
-              product.discount_price ??
-              product.price ??
-              0;
+            const price = (product as any).final_price ?? product.discount_price ?? product.price ?? 0;
 
             return (
               <div
@@ -467,7 +388,6 @@ function ShopContent() {
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:rotate-[1deg]"
                     />
                   </div>
-
                   <h3 className="font-bold text-sm mt-3 text-fimiku-darkText transition-colors duration-300 group-hover:text-fimiku-cta">
                     {product.name}
                   </h3>
@@ -475,36 +395,23 @@ function ShopContent() {
 
                 <div className="flex items-center gap-1 text-amber-400 mt-2">
                   {[0, 1, 2, 3, 4].map(index => (
-                    <Star
-                      key={index}
-                      className="w-3 h-3 fill-current"
-                    />
+                    <Star key={index} className="w-3 h-3 fill-current" />
                   ))}
-
-                  <span className="text-[10px] text-gray-400">
-                    5.0
-                  </span>
+                  <span className="text-[10px] text-gray-400">5.0</span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t">
                   <div>
                     <b>₹{price}</b>
-
-                    {product.discount_price &&
-                      Number(product.price) >
-                        Number(product.discount_price) && (
-                        <div className="text-[11px] line-through text-gray-400">
-                          ₹{product.price}
-                        </div>
-                      )}
+                    {product.discount_price && Number(product.price) > Number(product.discount_price) && (
+                      <div className="text-[11px] line-through text-gray-400">₹{product.price}</div>
+                    )}
                   </div>
 
                   <button
                     onClick={async event => {
                       const sourceButton = event.currentTarget;
-
                       await addToCart(product, 1);
-
                       launchPaperRocket(sourceButton, 'cart');
                     }}
                     className="group/bag relative overflow-hidden p-2.5 rounded-2xl bg-fimiku-veryLightLavender text-fimiku-cta border border-fimiku-lightPurple/40 shadow-[0_4px_0_rgba(190,170,225,0.65)] transition-all duration-200 hover:-translate-y-1 hover:bg-fimiku-cta hover:text-white hover:shadow-[0_6px_0_rgba(76,48,125,0.45)] active:translate-y-1 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fimiku-primary focus-visible:ring-offset-2"
@@ -539,11 +446,7 @@ function ShopContent() {
 export default function ShopPage() {
   return (
     <Suspense
-      fallback={
-        <div className="py-24 text-center">
-          Loading Fimiku Catalog...
-        </div>
-      }
+      fallback={<div className="py-24 text-center">Loading Fimiku Catalog...</div>}
     >
       <ShopContent />
     </Suspense>
